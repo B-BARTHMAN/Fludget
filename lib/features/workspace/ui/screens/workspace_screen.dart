@@ -1,8 +1,8 @@
 import 'package:fludget/features/canvas/ui/widgets/canvas_view.dart';
+import 'package:fludget/features/properties/ui/widgets/properties_panel.dart';
 import 'package:fludget/features/widget_tree/ui/widgets/widget_tree_panel.dart';
 import 'package:fludget/features/workspace/cubit/workspace_cubit.dart';
 import 'package:fludget/features/workspace/cubit/workspace_state.dart';
-import 'package:fludget/features/workspace/ui/widgets/document_area.dart';
 import 'package:fludget/features/workspace/ui/widgets/empty_workspace.dart';
 import 'package:fludget/features/workspace/ui/widgets/workspace_tab_bar.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +45,13 @@ class WorkspaceScreen extends StatelessWidget {
             appBar: AppBar(
               title: Text(state.activeTab!.name),
               actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    onPressed: Scaffold.of(context).openEndDrawer,
+                    icon: const Icon(Icons.tune),
+                    tooltip: 'Properties',
+                  ),
+                ),
                 IconButton(
                   onPressed: workspace.saveActive,
                   icon: const Icon(Icons.save_outlined),
@@ -66,6 +73,24 @@ class WorkspaceScreen extends StatelessWidget {
                     ),
                     Divider(height: 1),
                     Expanded(child: WidgetTreePanel()),
+                  ],
+                ),
+              ),
+            ),
+            endDrawer: const Drawer(
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Properties',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Divider(height: 1),
+                    Expanded(child: PropertiesPanel()),
                   ],
                 ),
               ),
