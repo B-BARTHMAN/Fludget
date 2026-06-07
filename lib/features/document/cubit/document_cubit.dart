@@ -1,5 +1,5 @@
+import 'package:fludget/core/domain/slots.dart';
 import 'package:fludget/core/domain/widget_registry.dart';
-import 'package:fludget/core/models/child_rule.dart';
 import 'package:fludget/core/models/widget_node.dart';
 import 'package:fludget/features/document/cubit/document_state.dart';
 import 'package:fludget/features/document/logic/tree_ops.dart' as tree;
@@ -13,15 +13,17 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   void select(String? id) => emit(state.copyWith(selectedId: id));
 
-  void addChild(String parentId, String type) {
+  void addChild(String parentId, String slot, String type) {
     final parent = tree.findById(state.root, parentId);
     if (parent == null) return;
-    final rule = widgetRegistry[parent.type]?.childRule ?? ChildRule.none;
-    if (rule == ChildRule.none) return;
-    if (rule == ChildRule.single && parent.children.isNotEmpty) return;
-
+    final arity = widgetRegistry[parent.type]?.slots[slot];
+    if (arity == null) return; // not a real slot on this parent
+    if (arity == SlotArity.single &&
+        (parent.slots[slot]?.isNotEmpty ?? false)) {
+      return;
+    }
     final child = WidgetNode(id: _uuid.v4(), type: type);
-    _commit(tree.addChild(state.root, parentId, child));
+    _commit(tree.addChild(state.root, parentId, slot, child));
   }
 
   void updateProps(String id, Map<String, dynamic> changes) =>

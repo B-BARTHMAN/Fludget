@@ -3,17 +3,26 @@ import 'package:fludget/core/models/widget_node.dart';
 
 WidgetNode normalizeNode(WidgetNode node) {
   final def = widgetRegistry[node.type];
-  final children = [for (final c in node.children) normalizeNode(c)];
-
-  if (def == null) {
-    return node.copyWith(props: const {}, children: children);
-  }
-
-  final allowed = {for (final spec in def.properties) spec.name};
-  final cleaned = {
-    for (final entry in node.props.entries)
-      if (allowed.contains(entry.key)) entry.key: entry.value,
+  final slots = {
+    for (final entry in node.slots.entries)
+      entry.key: [for (final c in entry.value) normalizeNode(c)],
   };
 
-  return node.copyWith(props: cleaned, children: children);
+  if (def == null) {
+    return node.copyWith(props: const {}, slots: slots);
+  }
+
+  final allowedProps = {for (final p in def.props) p.name};
+  final allowedSlots = def.slots.keys.toSet();
+
+  return node.copyWith(
+    props: {
+      for (final e in node.props.entries)
+        if (allowedProps.contains(e.key)) e.key: e.value,
+    },
+    slots: {
+      for (final e in slots.entries)
+        if (allowedSlots.contains(e.key)) e.key: e.value,
+    },
+  );
 }

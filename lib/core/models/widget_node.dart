@@ -14,7 +14,7 @@ abstract class WidgetNode with _$WidgetNode {
     required String id,
     required String type,
     @Default(<String, dynamic>{}) Map<String, dynamic> props,
-    @Default(<WidgetNode>[]) List<WidgetNode> children,
+    @Default(<String, List<WidgetNode>>{}) Map<String, List<WidgetNode>> slots,
   }) = _WidgetNode;
 
   factory WidgetNode.fromJson(Map<String, dynamic> json) =>

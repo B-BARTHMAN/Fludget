@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WidgetNode {
 
- String get id; String get type; Map<String, dynamic> get props; List<WidgetNode> get children;
+ String get id; String get type; Map<String, dynamic> get props; Map<String, List<WidgetNode>> get slots;
 /// Create a copy of WidgetNode
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $WidgetNodeCopyWith<WidgetNode> get copyWith => _$WidgetNodeCopyWithImpl<WidgetN
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WidgetNode&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.props, props)&&const DeepCollectionEquality().equals(other.children, children));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WidgetNode&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.props, props)&&const DeepCollectionEquality().equals(other.slots, slots));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,const DeepCollectionEquality().hash(props),const DeepCollectionEquality().hash(children));
+int get hashCode => Object.hash(runtimeType,id,type,const DeepCollectionEquality().hash(props),const DeepCollectionEquality().hash(slots));
 
 @override
 String toString() {
-  return 'WidgetNode(id: $id, type: $type, props: $props, children: $children)';
+  return 'WidgetNode(id: $id, type: $type, props: $props, slots: $slots)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $WidgetNodeCopyWith<$Res>  {
   factory $WidgetNodeCopyWith(WidgetNode value, $Res Function(WidgetNode) _then) = _$WidgetNodeCopyWithImpl;
 @useResult
 $Res call({
- String id, String type, Map<String, dynamic> props, List<WidgetNode> children
+ String id, String type, Map<String, dynamic> props, Map<String, List<WidgetNode>> slots
 });
 
 
@@ -65,13 +65,13 @@ class _$WidgetNodeCopyWithImpl<$Res>
 
 /// Create a copy of WidgetNode
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? props = null,Object? children = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? props = null,Object? slots = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,props: null == props ? _self.props : props // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>,children: null == children ? _self.children : children // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,
+as Map<String, dynamic>,slots: null == slots ? _self.slots : slots // ignore: cast_nullable_to_non_nullable
+as Map<String, List<WidgetNode>>,
   ));
 }
 
@@ -156,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  Map<String, dynamic> props,  List<WidgetNode> children)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  Map<String, dynamic> props,  Map<String, List<WidgetNode>> slots)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WidgetNode() when $default != null:
-return $default(_that.id,_that.type,_that.props,_that.children);case _:
+return $default(_that.id,_that.type,_that.props,_that.slots);case _:
   return orElse();
 
 }
@@ -177,10 +177,10 @@ return $default(_that.id,_that.type,_that.props,_that.children);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  Map<String, dynamic> props,  List<WidgetNode> children)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  Map<String, dynamic> props,  Map<String, List<WidgetNode>> slots)  $default,) {final _that = this;
 switch (_that) {
 case _WidgetNode():
-return $default(_that.id,_that.type,_that.props,_that.children);case _:
+return $default(_that.id,_that.type,_that.props,_that.slots);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +197,10 @@ return $default(_that.id,_that.type,_that.props,_that.children);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  Map<String, dynamic> props,  List<WidgetNode> children)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  Map<String, dynamic> props,  Map<String, List<WidgetNode>> slots)?  $default,) {final _that = this;
 switch (_that) {
 case _WidgetNode() when $default != null:
-return $default(_that.id,_that.type,_that.props,_that.children);case _:
+return $default(_that.id,_that.type,_that.props,_that.slots);case _:
   return null;
 
 }
@@ -212,7 +212,7 @@ return $default(_that.id,_that.type,_that.props,_that.children);case _:
 @JsonSerializable()
 
 class _WidgetNode implements WidgetNode {
-  const _WidgetNode({required this.id, required this.type, final  Map<String, dynamic> props = const <String, dynamic>{}, final  List<WidgetNode> children = const <WidgetNode>[]}): _props = props,_children = children;
+  const _WidgetNode({required this.id, required this.type, final  Map<String, dynamic> props = const <String, dynamic>{}, final  Map<String, List<WidgetNode>> slots = const <String, List<WidgetNode>>{}}): _props = props,_slots = slots;
   factory _WidgetNode.fromJson(Map<String, dynamic> json) => _$WidgetNodeFromJson(json);
 
 @override final  String id;
@@ -224,11 +224,11 @@ class _WidgetNode implements WidgetNode {
   return EqualUnmodifiableMapView(_props);
 }
 
- final  List<WidgetNode> _children;
-@override@JsonKey() List<WidgetNode> get children {
-  if (_children is EqualUnmodifiableListView) return _children;
+ final  Map<String, List<WidgetNode>> _slots;
+@override@JsonKey() Map<String, List<WidgetNode>> get slots {
+  if (_slots is EqualUnmodifiableMapView) return _slots;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_children);
+  return EqualUnmodifiableMapView(_slots);
 }
 
 
@@ -245,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WidgetNode&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other._props, _props)&&const DeepCollectionEquality().equals(other._children, _children));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WidgetNode&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other._props, _props)&&const DeepCollectionEquality().equals(other._slots, _slots));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,const DeepCollectionEquality().hash(_props),const DeepCollectionEquality().hash(_children));
+int get hashCode => Object.hash(runtimeType,id,type,const DeepCollectionEquality().hash(_props),const DeepCollectionEquality().hash(_slots));
 
 @override
 String toString() {
-  return 'WidgetNode(id: $id, type: $type, props: $props, children: $children)';
+  return 'WidgetNode(id: $id, type: $type, props: $props, slots: $slots)';
 }
 
 
@@ -265,7 +265,7 @@ abstract mixin class _$WidgetNodeCopyWith<$Res> implements $WidgetNodeCopyWith<$
   factory _$WidgetNodeCopyWith(_WidgetNode value, $Res Function(_WidgetNode) _then) = __$WidgetNodeCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String type, Map<String, dynamic> props, List<WidgetNode> children
+ String id, String type, Map<String, dynamic> props, Map<String, List<WidgetNode>> slots
 });
 
 
@@ -282,13 +282,13 @@ class __$WidgetNodeCopyWithImpl<$Res>
 
 /// Create a copy of WidgetNode
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? props = null,Object? children = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? props = null,Object? slots = null,}) {
   return _then(_WidgetNode(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,props: null == props ? _self._props : props // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>,children: null == children ? _self._children : children // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,
+as Map<String, dynamic>,slots: null == slots ? _self._slots : slots // ignore: cast_nullable_to_non_nullable
+as Map<String, List<WidgetNode>>,
   ));
 }
 
