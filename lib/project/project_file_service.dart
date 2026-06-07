@@ -29,7 +29,7 @@ class ProjectFileService {
   Future<Directory> _projectsDir() async {
     final base = await getApplicationDocumentsDirectory();
     final dir = Directory('${base.path}/fludget/$folderName');
-    if (dir.existsSync()) {
+    if (!dir.existsSync()) {
       await dir.create(recursive: true);
     }
     return dir;
