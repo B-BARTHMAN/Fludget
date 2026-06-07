@@ -10,10 +10,10 @@ intentionally non-functional (empty callbacks).
 ## Features
 
 - Visual **widget tree** with select / add / delete / edit.
-- Live **canvas** preview in a resizable device frame with zoom and pan.
+- Live **canvas** preview in a resizable device frame.
 - **Property editing** with purpose-built editors (color picker, padding/margin,
   alignment grid, enum dropdowns, text style, and more).
-- **Add widgets** by drag-and-drop from the palette or via a `+` button.
+- **Add widgets** via a `+` button on a slot (drag-from-palette planned).
 - **Undo / redo.**
 - **Multiple projects** open in tabs.
 - **Save / load** projects as JSON.
@@ -25,28 +25,43 @@ iOS · Android · macOS · Windows · Linux. (Web is not a target.)
 
 ## Tech
 
-Flutter (stable) · cubits via `flutter_bloc` · minimal dependencies.
+Flutter (stable) · cubits via `flutter_bloc` · `go_router` · `freezed` +
+`json_serializable` for the model · `uuid` · `path_provider`. Minimal
+dependencies; small UI is hand-rolled.
 
 ## Getting started
 
 ```bash
 # clone, then:
 flutter pub get
-flutter run -d macos     # or windows / linux / chrome-less mobile device
+dart run build_runner build --delete-conflicting-outputs
+flutter run -d macos     # or windows / linux / a mobile device
 ```
 
 If scaffolding from scratch:
 
 ```bash
-flutter create --platforms=ios,android,macos,windows,linux --org com.yourname widget_composer
+flutter create --platforms=ios,android,macos,windows,linux --org com.yourname fludget
 ```
 
 ## Project structure
 
-Feature-first. `lib/core` holds shared models, services, repositories, routing,
-and theme; `lib/features` holds small, focused features (`workspace`, `document`,
-`widget_tree`, `canvas`, `properties`, `palette`, `code_export`), each with
-`ui/`, `cubit/`, and `logic/` as needed.
+Four layers with a strict one-way dependency chain
+(`catalog ← project ← editor ← app`):
+
+```
+lib/
+  main.dart
+  app/        bootstrap · router · theme
+  catalog/    the widget system: model · defs · props · registry · render · codegen
+  project/    the persisted document + storage
+  editor/     editing state + UI (workspace · document · widget_tree · canvas · properties)
+```
+
+`catalog/` is the engine and depends on nothing internal. Concrete widget
+definitions live under `catalog/widgets/` grouped by category (`layout/`,
+`display/`, `input/`); the property-type system (codecs + editors) lives under
+`catalog/properties/`.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and
 [`CLAUDE.md`](CLAUDE.md) for contribution conventions.
@@ -54,8 +69,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and
 ## Contributing
 
 The codebase favors small files and small features. The key extension point: to
-support a new widget, add one `WidgetDefinition` to the registry (build + code
-generation + properties) — nothing else should need to change. Please read
+support a new widget, add one `WidgetDef` file under
+`lib/catalog/widgets/<category>/` and register it with one line in
+`lib/catalog/registry.dart` — nothing else needs to change. Please read
 `CLAUDE.md` first.
 
 ## License

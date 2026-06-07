@@ -1,7 +1,7 @@
 # Architecture
 
-> These are interface sketches to align on, not final code. The goal is a small,
-> readable codebase where **adding a new widget is one registry entry**.
+> This describes the implemented design. The guiding goal is a small, readable
+> codebase where **adding a new widget is one registry entry**.
 
 ## 1. The core idea
 
@@ -9,120 +9,192 @@ The app is not a tree of Flutter widgets. It is a **serializable data tree** tha
 gets rendered into Flutter widgets and exported as Dart source.
 
 ```
-WidgetNode tree  ──build()──►  real Flutter widgets   (the live preview)
-                 ──toCode()─►  Dart source            (code export)
-                 ──toJson()─►  JSON                    (save / load)
+WidgetNode tree  ──buildNode()──►  real Flutter widgets   (the live preview)
+                 ──generate()──►   Dart source            (code export)
+                 ──toJson()────►   JSON                    (save / load)
 ```
 
 Everything below exists to support that one pipeline.
 
-## 2. Core domain models (`core/models/`)
+## 2. Four layers
+
+The top level maps to the four concerns of the app, with a strict one-way
+dependency chain:
+
+```
+catalog  ←  project  ←  editor  ←  app
+```
+
+```
+lib/
+  main.dart
+  app/        bootstrap · router · theme
+  catalog/    the widget system (engine)
+  project/    the persisted document + storage
+  editor/     editing state + UI
+```
+
+`catalog/` knows nothing about the rest. `project/` builds on `catalog/`.
+`editor/` builds on both. `app/` wires them together. There are no cycles.
+
+## 3. The model (`catalog/model/`)
 
 ```dart
-/// A single node in the prototype tree. Immutable.
-class WidgetNode {
-  final String id;                    // stable, e.g. nanoid/uuid
-  final String type;                  // registry key, e.g. "Container"
-  final Map<String, Object?> props;   // raw, serializable property values
-  final List<WidgetNode> children;
+/// A single node in the prototype tree. Immutable, serializable.
+@freezed
+abstract class WidgetNode with _$WidgetNode {
+  const factory WidgetNode({
+    required String id,                                 // stable, uuid v4
+    required String type,                               // registry key, e.g. "Container"
+    @Default(<String, dynamic>{}) Map<String, dynamic> props,
+    @Default(<String, List<WidgetNode>>{})
+    Map<String, List<WidgetNode>> slots,                // named child lists
+  }) = _WidgetNode;
 
-  WidgetNode copyWith({...});          // for immutable edits
+  factory WidgetNode.fromJson(Map<String, dynamic> json) => _$WidgetNodeFromJson(json);
+}
+```
+
+`props` holds only plain serializable values (numbers, strings, ints for colors,
+maps for `EdgeInsets`/`TextStyle`). Children live in **named slots** rather than
+one flat list, so a single widget can expose several distinct child positions
+(e.g. `IconButton`'s `icon` slot, `Row`'s `children` slot). `freezed` +
+`json_serializable` generate equality, `copyWith`, and JSON — the model stays
+declarative.
+
+`Project` (the persisted document) lives separately in `project/` (see §8).
+
+## 4. The property system (`catalog/properties/`)
+
+A property type is described by a **codec** that knows everything one property
+kind needs: how to decode JSON to a real value, how to emit Dart source, and
+which editor widget to show.
+
+```dart
+abstract class PropCodec<T> {
+  const PropCodec();
+  T decode(Object? json);                                   // for the preview
+  String toCode(Object? json);                              // for code export
+  Widget editor(Object? value, ValueChanged<Object?> onChanged); // for the panel
+  Object? get defaultJson => null;
 }
 
-enum ChildRule { none, single, multiple }
-
-/// Describes one editable property of a widget type.
-class PropertySpec {
-  final String name;            // "padding", "color", "mainAxisAlignment"
-  final PropertyType type;      // drives which editor widget is shown
-  final Object? defaultValue;
-  final List<Object>? options;  // only for PropertyType.enumValue
-}
-
-enum PropertyType {
-  doubleValue, string, boolean, color, edgeInsets, alignment, enumValue, textStyle,
-}
-
-/// A project = one tab's content. One JSON file on disk.
-class Project {
+/// Binds a property name to a codec. Declared once, referenced in a def's
+/// `props` list and inside its `build` / `toCode`.
+class Prop<T> {
+  const Prop(this.name, this.codec, {this.label});
   final String name;
-  final WidgetNode root;        // the top-level node (a StatelessWidget body)
+  final String? label;
+  final PropCodec<T> codec;
+
+  T read(WidgetNode node) => codec.decode(node.props[name]);
+  String code(WidgetNode node) => codec.toCode(node.props[name]);
 }
 ```
 
-`props` stays as plain serializable values (numbers, strings, ints for colors,
-maps for EdgeInsets/TextStyle). Conversion to real `Color`/`EdgeInsets`/`TextStyle`
-happens only at build/codegen time. This keeps JSON trivial and the model dumb.
+- **`codecs/`** — one `PropCodec` per kind: string, color, double, enum,
+  edge_insets, alignment, text_style, icon_name, visual_density.
+- **`editors/`** — the Flutter editor widgets codecs return: string, bool,
+  double, enum, and a `PendingEditor` placeholder for kinds whose editor isn't
+  built yet.
 
-## 3. The widget registry (`core/services/widget_registry.dart`)
+Because codecs return their own editors, the properties panel never branches on
+type — it just renders `prop.codec.editor(...)`.
 
-The single most important file for extensibility. One `WidgetDefinition` per
-supported widget type; the registry is just a `Map<String, WidgetDefinition>`.
+## 5. Widget definitions (`catalog/widgets/`, `catalog/widget_def.dart`)
+
+One `WidgetDef` per supported widget type. This is the backbone of extensibility.
 
 ```dart
-class WidgetDefinition {
+class WidgetDef {
+  WidgetDef({
+    required this.type,
+    required this.build,
+    required this.toCode,
+    this.props = const [],
+    this.slots = const {},
+  });
+
   final String type;
-  final ChildRule childRule;
-  final List<PropertySpec> properties;
-
-  /// Build the live preview widget from a node + its already-built children.
-  final Widget Function(WidgetNode node, List<Widget> children) build;
-
-  /// Emit Dart source for this node, given its children's source.
-  final String Function(WidgetNode node, List<String> childCode) toCode;
+  final List<Prop<dynamic>> props;
+  final Map<String, SlotArity> slots;                       // single / many
+  final Widget Function(WidgetNode node, Map<String, List<Widget>> children) build;
+  final String Function(WidgetNode node, Map<String, List<String>> children) toCode;
 }
 ```
 
-**Adding a new widget = appending one `WidgetDefinition`.** It automatically
-gets a property editor (panel reads `properties`), a preview (`build`), and
-code export (`toCode`). No other file needs to change. This is the backbone of
-requirement #7.
+Defs are grouped by category so the catalog stays navigable and the question
+"where does a new widget go?" answers itself:
 
-Starting catalog (Material): `Container`, `Padding`, `Center`, `Align`,
-`SizedBox`, `Row`, `Column`, `Stack`, `Expanded`, `Flexible`, `Text`, `Icon`,
-`Image`, `Card`, `Divider`.
-
-## 4. Rendering pipeline (`features/canvas/logic/node_builder.dart`)
-
-A small recursive function, registry-driven:
-
-```dart
-Widget buildNode(WidgetNode node) {
-  final def = registry[node.type]!;
-  final children = node.children.map(buildNode).toList();
-  return def.build(node, children);
-}
+```
+catalog/widgets/
+  layout/    container · padding · center · sized_box · row · column
+  display/   text · icon
+  input/     icon_button
 ```
 
-Selection outline is **not** baked into `build`. The canvas wraps the result in
-a transparent overlay that draws a border around the currently selected node's
-bounds, so the preview stays a faithful representation of the real widget.
+**Adding a widget = adding one file here + one line in `registry.dart`.** It
+then gets a property editor, a preview, and code export for free.
 
-## 5. Code export (`core/services/code_generator.dart`)
+`SlotArity` and the `.one(slot)` / `.many(slot)` accessors live in
+`catalog/slots.dart`; defs read their children through them.
 
-Mirror of `buildNode`, registry-driven, producing a `StatelessWidget`:
+## 6. The registry (`catalog/registry.dart`)
+
+The single most important file. One `WidgetDef` per type, collected into a map:
 
 ```dart
-String generate(WidgetNode root, {String className = 'MyWidget'}) { ... }
+final List<WidgetDef> _definitions = [
+  textDef, iconDef, containerDef, paddingDef, centerDef,
+  sizedBoxDef, rowDef, columnDef, iconButtonDef,
+];
+
+final Map<String, WidgetDef> widgetRegistry = {
+  for (final def in _definitions) def.type: def,
+};
 ```
 
-All callbacks are emitted as empty lambdas (`onPressed: () {}`), because this is
-a visualization tool, not an app builder. Output is a single formatted Dart
-string shown in an export view with a copy button.
+## 7. Tree consumers (`catalog/`)
 
-## 6. State management — cubits (`flutter_bloc`)
+Three small registry-driven traversals, mirror images of each other:
+
+- **`node_builder.dart`** — `buildNode(node)` recursively renders a node into
+  real Flutter widgets for the canvas, resolving each slot and calling
+  `def.build`.
+- **`code_generator.dart`** — `generate(root, {className})` emits a
+  `StatelessWidget`, mirroring `buildNode` via `def.toCode`. All callbacks are
+  emitted as empty lambdas — this is a visualization tool, not an app builder.
+- **`normalizer.dart`** — `normalizeNode(node)` drops props and slots a type
+  doesn't declare, keeping loaded JSON consistent with the current registry.
+
+Selection outline is **not** baked into `build`; the canvas draws it as an
+overlay so the preview stays a faithful representation of the real widget.
+
+## 8. Persistence (`project/`)
+
+```
+project/
+  project.dart              Project model (name + root WidgetNode), freezed/json
+  project_repository.dart    Project <-> JSON, normalizes on load and save
+  project_file_service.dart  raw file IO via dart:io + path_provider
+```
+
+`ProjectFileService` reads/writes JSON files in a writable app directory.
+`ProjectRepository` maps between `Project` and JSON and runs `normalizeNode` on
+the way in and out. Arbitrary-location import/export (`file_picker`) is a later
+add.
+
+## 9. State management — cubits (`editor/`, `flutter_bloc`)
 
 Two cubits, clear ownership:
 
-- **`WorkspaceCubit`** (`features/workspace/cubit/`) — the open tabs. Holds a
-  list of `DocumentCubit`s (one per tab) and the active index. Opening, closing,
-  and switching tabs lives here. Tabs keep their state alive when inactive.
+- **`WorkspaceCubit`** (`editor/workspace/`) — the open tabs. Holds a list of
+  `DocumentTab` records `(name, DocumentCubit)` and the active index. Opening,
+  closing, switching, saving, and creating tabs live here. Inactive tabs keep
+  their state alive.
 
-- **`DocumentCubit`** (`features/document/cubit/`) — the heart. Owns one tab's
-  state: the `WidgetNode` root, the selected node id, and undo/redo history.
-  Every edit (add child, edit property, delete node) is a pure tree
-  transformation that produces a new root and pushes the previous root onto an
-  undo stack.
+- **`DocumentCubit`** (`editor/document/`) — the heart. Owns one tab's state and
+  every edit is a pure tree transformation that produces a new root.
 
 ```dart
 class DocumentState {
@@ -135,92 +207,84 @@ class DocumentState {
 
 `widget_tree`, `canvas`, and `properties` are **UI-only** features that read and
 command the active `DocumentCubit`. Selecting in the tree sets `selectedId`;
-canvas and properties both react to it — that is why selection, outline, and the
+canvas and properties both react to it — which is why selection, outline, and the
 property panel stay in sync for free.
 
 Undo/redo is cheap precisely because `WidgetNode` is immutable: history is just a
-list of past roots.
+list of past roots. Pure mutations (`findById`, `updateById`, `addChild`,
+`updateProps`, `removeById`) live in `editor/document/tree_ops.dart`.
 
-## 7. Persistence (`core/repositories/project_repository.dart`)
-
-- `WidgetNode`/`Project` ⇄ JSON via hand-written `toJson`/`fromJson` (no codegen
-  dependency; the model is small).
-- `ProjectRepository` saves/loads JSON files using `dart:io` + `path_provider`
-  for a writable app directory. Arbitrary-location import/export (`file_picker`)
-  is a later add.
-
-## 8. Feature map (folder layout)
+## 10. Feature map (folder layout)
 
 ```
 lib/
   main.dart
-  app.dart                         # MaterialApp + root BlocProviders + theme
-  core/
-    models/                        # WidgetNode, PropertySpec, WidgetDefinition, Project, enums
-    services/
-      widget_registry.dart         # the catalog (one WidgetDefinition per type)
-      code_generator.dart
-    repositories/
-      project_repository.dart      # JSON save / load
-    routing/                       # minimal for now (single workspace screen)
-    theme/                         # light + dark ThemeData
-  features/
-    workspace/                     # adaptive shell + tab bar
-      ui/screens/ ui/widgets/
-      cubit/                       # WorkspaceCubit
-      logic/                       # adaptive layout helpers
-    document/                      # the editing state feature (no UI of its own)
-      cubit/                       # DocumentCubit
-      logic/                       # tree mutations, undo/redo
-    widget_tree/                   # left tree view (UI only)
-      ui/widgets/ ui/dialogs/
-    canvas/                        # preview area, device frame, zoom/pan, outline
-      ui/widgets/
-      cubit/                       # CanvasCubit (zoom, pan, device size)
-      logic/                       # node_builder.dart
-    properties/                    # right/bottom property panel
-      ui/widgets/
-      ui/widgets/editors/          # color, edge_insets, alignment, enum, text_style, double...
-    palette/                       # addable-widget catalog + drag sources
-      ui/widgets/
-    code_export/                   # export view
-      ui/screens/
-      cubit/
+  app/
+    app.dart                  MaterialApp.router + root providers + theme
+    router.dart               GoRouter
+    routes.dart               route constants
+    theme.dart                light + dark ThemeData
+  catalog/
+    registry.dart             the catalog (one WidgetDef per type)
+    widget_def.dart           WidgetDef contract
+    slots.dart                SlotArity + child access
+    node_builder.dart         WidgetNode -> Widget (preview)
+    code_generator.dart       WidgetNode -> Dart source
+    normalizer.dart           clean a tree vs the registry
+    model/
+      widget_node.dart        (+ .freezed.dart + .g.dart)
+    widgets/
+      layout/ display/ input/ concrete WidgetDefs by category
+    properties/
+      prop.dart               Prop + PropCodec
+      codecs/                 one codec per property kind
+      editors/                color, edge_insets, alignment, enum, double, …
+  project/
+    project.dart              (+ .freezed.dart + .g.dart)
+    project_repository.dart   JSON save / load
+    project_file_service.dart writable-directory file IO
+  editor/
+    workspace/                shell + tab bar + WorkspaceCubit
+    document/                 DocumentCubit + tree mutations (no UI)
+    widget_tree/              left tree view
+    canvas/                   preview area / device frame
+    properties/               property panel
 ```
 
-Keep features small. If a feature grows a second responsibility, split it.
+Keep features small. If a feature grows a second responsibility, split it. A
+feature can reintroduce a `ui/` subfolder once it outgrows a single folder.
 
-## 9. Editing UX
+## 11. Editing UX
 
-- **Adaptive layout** (mobile-first): on a phone, one pane at a time — canvas with
-  the tree and properties reachable via a drawer / bottom sheet. On wide screens,
-  a 3-pane layout (tree │ canvas │ properties). Driven by `LayoutBuilder` /
-  width breakpoints in `workspace/logic`.
-- **Adding widgets:** drag from the palette onto a container node (tree or
-  canvas), or use the `+` button on a node. Drop is allowed only where
-  `ChildRule` permits (e.g. not onto a `Text`).
-- **Property panel:** generated from the selected node's `PropertySpec` list;
-  each `PropertyType` maps to one editor widget under `properties/ui/widgets/editors/`.
-- **Canvas:** resizable device frame, zoom + pan, selection overlay.
+- **Adaptive layout** (mobile-first): on a phone, the tree and properties are
+  reachable via drawers; on wide screens, a 3-pane layout (tree │ canvas │
+  properties).
+- **Adding widgets:** the `+` button on a slot, or (later) drag from a palette.
+  Drop is allowed only where `SlotArity` permits.
+- **Property panel:** generated from the selected node's `Prop` list; each codec
+  supplies its own editor.
+- **Canvas:** device frame today; zoom, pan, and a selection overlay are planned.
 
-## 10. Dependencies (kept minimal)
+## 12. Dependencies (kept minimal)
 
-| Package         | Why                                              |
-|-----------------|--------------------------------------------------|
-| `flutter_bloc`  | Cubits — the chosen state management.            |
-| `path_provider` | Writable directory for JSON projects.            |
-| `equatable`     | (Optional) clean value-equality on cubit states. |
-| `uuid`/`nanoid` | Stable node ids. (Optional — can hand-roll.)     |
-| `go_router`     | routing     |
+| Package                          | Why                                        |
+|----------------------------------|--------------------------------------------|
+| `flutter_bloc`                   | Cubits — the chosen state management.      |
+| `go_router`                      | Routing.                                   |
+| `path_provider`                  | Writable directory for JSON projects.      |
+| `uuid`                           | Stable node ids.                           |
+| `freezed` / `json_serializable`  | Model equality, `copyWith`, and JSON.      |
 
 Everything else — color picker, edge-insets editor, alignment grid, tabs,
 undo/redo, drag-and-drop, code export — is hand-rolled. Add a dependency only
 when it clearly beats writing it, and note why in the PR.
 
-## 11. Deferred (cheap to add later, by design)
+## 13. Deferred (cheap to add later, by design)
 
 - Reorder-by-drag and move/reparent (immutable tree → remove + insert).
 - Copy/paste of subtrees.
-- Cupertino catalog (just more `WidgetDefinition`s).
-- Stateful root toggle (only matters for code export).
+- Real editors for the `PendingEditor` placeholders (color, alignment, …).
+- A palette feature and drag-to-add.
+- A `CanvasCubit` for zoom / pan / device size, plus the selection overlay.
+- Cupertino catalog (just more `WidgetDef`s).
 - `file_picker` for arbitrary import/export locations.
