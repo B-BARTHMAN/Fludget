@@ -102,10 +102,10 @@ class _Workspace extends StatelessWidget {
   }) {
     final workspace = context.read<WorkspaceCubit>();
 
-    // Provide the active document ONLY to the regions that read it, instead of
-    // wrapping the whole Scaffold. The Scaffold and its drawers keep their place
-    // in the tree when `active` appears/disappears, so the open drawer's
-    // animation is never disposed mid-flight — that was the crash.
+    // Provide the active document ONLY to the regions that read it. LeftPanel is
+    // intentionally NOT wrapped: only its Outline needs the document, and it
+    // provides that for itself, so the panel (and its animated SegmentedButton)
+    // is not rebuilt every time the active component changes.
     Widget withDoc(Widget child) => active == null
         ? child
         : BlocProvider.value(value: active, child: child);
@@ -134,7 +134,7 @@ class _Workspace extends StatelessWidget {
         ),
         actions: [
           if (active != null) ...[
-            withDoc(const UndoRedoButtons()), // ← 1. reads the document
+            withDoc(const UndoRedoButtons()),
             IconButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -159,14 +159,11 @@ class _Workspace extends StatelessWidget {
           ],
         ],
       ),
-      // 2. The Drawer widget itself is unchanged (so its controller survives);
-      //    only its child — the Outline, which reads the document — is wrapped.
-      drawer: wide ? null : Drawer(child: withDoc(const LeftPanel())),
+      drawer: wide ? null : const Drawer(child: LeftPanel()),
       endDrawer: active == null
           ? null
           : Drawer(
               child: withDoc(
-                // ← 3. Properties panel
                 const SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -185,18 +182,15 @@ class _Workspace extends StatelessWidget {
                 ),
               ),
             ),
-      // 4. Canvas (and, when wide, the left Outline column) reads the document.
-      body: withDoc(
-        wide
-            ? Row(
-                children: [
-                  const SizedBox(width: 300, child: LeftPanel()),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: canvasColumn),
-                ],
-              )
-            : canvasColumn,
-      ),
+      body: wide
+          ? Row(
+              children: [
+                const SizedBox(width: 300, child: LeftPanel()),
+                const VerticalDivider(width: 1),
+                Expanded(child: withDoc(canvasColumn)),
+              ],
+            )
+          : withDoc(canvasColumn),
     );
   }
 }

@@ -61,10 +61,11 @@ class _Outline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WorkspaceCubit, WorkspaceState>(
-      buildWhen: (p, c) =>
-          (p.activeDocument == null) != (c.activeDocument == null),
+      buildWhen: (previous, current) =>
+          previous.activeDocument != current.activeDocument,
       builder: (context, state) {
-        if (state.activeDocument == null) {
+        final document = state.activeDocument;
+        if (document == null) {
           final colors = Theme.of(context).colorScheme;
           return Center(
             child: Text(
@@ -73,7 +74,10 @@ class _Outline extends StatelessWidget {
             ),
           );
         }
-        return const WidgetTreePanel();
+        return BlocProvider.value(
+          value: document,
+          child: const WidgetTreePanel(),
+        );
       },
     );
   }
