@@ -1,146 +1,176 @@
 import 'package:fludget/editor/canvas/canvas_view.dart';
 import 'package:fludget/editor/code_view/code_view_page.dart';
+import 'package:fludget/editor/document/document_cubit.dart';
+import 'package:fludget/editor/project/project_cubit.dart';
+import 'package:fludget/editor/project/project_state.dart';
 import 'package:fludget/editor/properties/properties_panel.dart';
-import 'package:fludget/editor/widget_tree/widget_tree_panel.dart';
 import 'package:fludget/editor/workspace/empty_workspace.dart';
+import 'package:fludget/editor/workspace/left_panel.dart';
 import 'package:fludget/editor/workspace/undo_redo_buttons.dart';
 import 'package:fludget/editor/workspace/workspace_cubit.dart';
 import 'package:fludget/editor/workspace/workspace_state.dart';
 import 'package:fludget/editor/workspace/workspace_tab_bar.dart';
+import 'package:fludget/project/loaded_project.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+const _wideBreakpoint = 720.0;
 
 class WorkspaceScreen extends StatelessWidget {
   const WorkspaceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<WorkspaceCubit, WorkspaceState>(
-      builder: (context, state) {
-        final workspace = context.read<WorkspaceCubit>();
-
-        final tabBar = WorkspaceTabBar(
-          tabs: [for (final t in state.tabs) t.name],
-          activeIndex: state.activeIndex,
-          onSelect: workspace.switchTo,
-          onClose: workspace.closeTab,
-          onNew: workspace.newDocument,
-        );
-
-        final active = state.activeDocument;
-        if (active == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Fludget')),
-            body: Column(
-              children: [
-                tabBar,
-                const Divider(height: 1),
-                const Expanded(child: EmptyWorkspace()),
-              ],
-            ),
+    return BlocBuilder<ProjectCubit, ProjectState>(
+      builder: (context, projectState) {
+        final project = projectState.project;
+        if (project == null) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
+        return _Workspace(project: project);
+      },
+    );
+  }
+}
 
-        return BlocProvider.value(
-          value: active,
-          child: CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.keyZ, control: true):
-                  active.undo,
-              const SingleActivator(LogicalKeyboardKey.keyZ, meta: true):
-                  active.undo,
-              const SingleActivator(
-                LogicalKeyboardKey.keyZ,
-                control: true,
-                shift: true,
-              ): active.redo,
-              const SingleActivator(
-                LogicalKeyboardKey.keyZ,
-                meta: true,
-                shift: true,
-              ): active.redo,
-              const SingleActivator(LogicalKeyboardKey.keyY, control: true):
-                  active.redo,
-            },
-            child: Focus(
-              autofocus: true,
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text(state.activeTab!.name),
-                  actions: [
-                    const UndoRedoButtons(),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => CodeViewPage(root: active.state.root),
-                        ),
-                      ),
-                      icon: const Icon(Icons.code),
-                      tooltip: 'View Code',
-                    ),
-                    Builder(
-                      builder: (context) => IconButton(
-                        onPressed: Scaffold.of(context).openEndDrawer,
-                        icon: const Icon(Icons.tune),
-                        tooltip: 'Properties',
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: workspace.saveActive,
-                      icon: const Icon(Icons.save_outlined),
-                      tooltip: 'Save',
-                    ),
-                  ],
+class _Workspace extends StatelessWidget {
+  const _Workspace({required this.project});
+
+  final LoadedProject project;
+
+  String _nameOf(String componentId) =>
+      project.component(componentId)?.name ?? 'Untitled';
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<WorkspaceCubit, WorkspaceState>(
+      builder: (context, state) {
+        final active = state.activeDocument;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= _wideBreakpoint;
+            final scaffold = _scaffold(context, state, active, wide: wide);
+            if (active == null) return scaffold;
+            return BlocProvider.value(
+              value: active,
+              child: CallbackShortcuts(
+                bindings: <ShortcutActivator, VoidCallback>{
+                  const SingleActivator(LogicalKeyboardKey.keyZ, control: true):
+                      active.undo,
+                  const SingleActivator(LogicalKeyboardKey.keyZ, meta: true):
+                      active.undo,
+                  const SingleActivator(
+                    LogicalKeyboardKey.keyZ,
+                    control: true,
+                    shift: true,
+                  ): active.redo,
+                  const SingleActivator(
+                    LogicalKeyboardKey.keyZ,
+                    meta: true,
+                    shift: true,
+                  ): active.redo,
+                  const SingleActivator(LogicalKeyboardKey.keyY, control: true):
+                      active.redo,
+                },
+                child: Focus(autofocus: true, child: scaffold),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _scaffold(
+    BuildContext context,
+    WorkspaceState state,
+    DocumentCubit? active, {
+    required bool wide,
+  }) {
+    final workspace = context.read<WorkspaceCubit>();
+
+    final tabBar = WorkspaceTabBar(
+      tabs: [for (final t in state.tabs) _nameOf(t.componentId)],
+      activeIndex: state.activeIndex,
+      onSelect: workspace.switchTo,
+      onClose: workspace.closeTab,
+    );
+
+    final canvasColumn = Column(
+      children: [
+        tabBar,
+        const Divider(height: 16),
+        Expanded(
+          child: active == null ? const EmptyWorkspace() : const CanvasView(),
+        ),
+      ],
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          active == null ? 'Fludget' : _nameOf(state.activeTab!.componentId),
+        ),
+        actions: [
+          if (active != null) ...[
+            const UndoRedoButtons(),
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CodeViewPage(root: active.state.root),
                 ),
-                drawer: const Drawer(
-                  child: SafeArea(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Widget Tree',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Divider(height: 1),
-                        Expanded(child: WidgetTreePanel()),
-                      ],
-                    ),
-                  ),
-                ),
-                endDrawer: const Drawer(
-                  child: SafeArea(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Properties',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Divider(height: 1),
-                        Expanded(child: PropertiesPanel()),
-                      ],
-                    ),
-                  ),
-                ),
-                body: Column(
+              ),
+              icon: const Icon(Icons.code),
+              tooltip: 'View Code',
+            ),
+            Builder(
+              builder: (context) => IconButton(
+                onPressed: Scaffold.of(context).openEndDrawer,
+                icon: const Icon(Icons.tune),
+                tooltip: 'Properties',
+              ),
+            ),
+            IconButton(
+              onPressed: workspace.saveActive,
+              icon: const Icon(Icons.save_outlined),
+              tooltip: 'Save',
+            ),
+          ],
+        ],
+      ),
+      drawer: wide ? null : const Drawer(child: LeftPanel()),
+      endDrawer: active == null
+          ? null
+          : const Drawer(
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    tabBar,
-                    const Divider(height: 16),
-                    const Expanded(child: CanvasView()),
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Properties',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Divider(height: 1),
+                    Expanded(child: PropertiesPanel()),
                   ],
                 ),
               ),
             ),
-          ),
-        );
-      },
+      body: wide
+          ? Row(
+              children: [
+                const SizedBox(width: 300, child: LeftPanel()),
+                const VerticalDivider(width: 1),
+                Expanded(child: canvasColumn),
+              ],
+            )
+          : canvasColumn,
     );
   }
 }

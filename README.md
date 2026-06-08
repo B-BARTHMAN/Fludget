@@ -1,23 +1,29 @@
 # Widget Composer
 
 A cross-platform Flutter tool for **prototyping and visualizing widgets**. Compose
-standard Flutter widgets into a tree, see them rendered live, edit their
-properties, and export the result as Dart code.
+standard Flutter widgets into components, organize them in folders, see them
+rendered live, edit their properties, and export the result as Dart code.
 
 It is a design/visualization tool, not an app builder — interactive elements are
 intentionally non-functional (empty callbacks).
 
 ## Features
 
-- Visual **widget tree** with select / add / delete / edit.
-- Live **canvas** preview in a resizable device frame.
-- **Property editing** with purpose-built editors (color picker, padding/margin,
-  alignment grid, enum dropdowns, text style, and more).
+- **Projects as folders of components** — each component is one StatelessWidget's
+  worth of content, saved as a JSON file; folders organize them.
+- **Files explorer** — create, rename, move, and delete components and folders,
+  all reachable by tap.
+- **Multiple components** open in tabs, with quick switching.
+- Visual **widget tree** (Outline) with select / add / delete / edit.
+- Live **canvas** preview in a device frame, with tap-to-select and a selection
+  outline.
+- **Property editing** with typed editors (text, number, switch, enum dropdowns);
+  richer editors (color, padding, alignment, text style) are in progress.
 - **Add widgets** via a `+` button on a slot (drag-from-palette planned).
 - **Undo / redo.**
-- **Multiple projects** open in tabs.
-- **Save / load** projects as JSON.
-- **Export** the composed tree to a Flutter `StatelessWidget`.
+- **Export** a component to a Flutter `StatelessWidget`.
+- **Component composition** (referencing one component inside another) — planned;
+  the model already carries the stable ids it needs.
 
 ## Platforms
 
@@ -26,7 +32,7 @@ iOS · Android · macOS · Windows · Linux. (Web is not a target.)
 ## Tech
 
 Flutter (stable) · cubits via `flutter_bloc` · `go_router` · `freezed` +
-`json_serializable` for the model · `uuid` · `path_provider`. Minimal
+`json_serializable` for the model · `uuid` · `path_provider` · `path`. Minimal
 dependencies; small UI is hand-rolled.
 
 ## Getting started
@@ -54,14 +60,16 @@ lib/
   main.dart
   app/        bootstrap · router · theme
   catalog/    the widget system: model · defs · props · registry · render · codegen
-  project/    the persisted document + storage
-  editor/     editing state + UI (workspace · document · widget_tree · canvas · properties)
+  project/    components on disk: model · index · repository · directory IO
+  editor/     editing state + UI (project · workspace · document · files ·
+              widget_tree · canvas · properties · code_view)
 ```
 
 `catalog/` is the engine and depends on nothing internal. Concrete widget
 definitions live under `catalog/widgets/` grouped by category (`layout/`,
 `display/`, `input/`); the property-type system (codecs + editors) lives under
-`catalog/properties/`.
+`catalog/properties/`. A project is a directory of `<name>.json` components in
+folders, managed by `project/` and `editor/project/`.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and
 [`CLAUDE.md`](CLAUDE.md) for contribution conventions.

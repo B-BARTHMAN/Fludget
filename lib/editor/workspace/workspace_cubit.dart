@@ -1,37 +1,36 @@
-import 'package:fludget/catalog/model/widget_node.dart';
+import 'dart:async';
+
 import 'package:fludget/editor/document/document_cubit.dart';
+import 'package:fludget/editor/project/project_cubit.dart';
+import 'package:fludget/editor/project/project_state.dart';
 import 'package:fludget/editor/workspace/workspace_state.dart';
-import 'package:fludget/project/project.dart';
-import 'package:fludget/project/project_repository.dart';
+import 'package:fludget/project/loaded_project.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
+/// Owns the open components (top-bar tabs) and the active one. Seeds a
+/// [DocumentCubit] per open component from [ProjectCubit]; roots and
+/// persistence live in [ProjectCubit].
 class WorkspaceCubit extends Cubit<WorkspaceState> {
-  WorkspaceCubit({required ProjectRepository repository})
-    : _repository = repository,
-      super(const WorkspaceState());
-
-  final ProjectRepository _repository;
-  static final _uuid = Uuid();
-
-  void newDocument({String name = 'Untitled'}) {
-    final tab = (name: _uniqueName(name), cubit: DocumentCubit(_defaultRoot()));
-    emit(
-      state.copyWith(
-        tabs: [...state.tabs, tab],
-        activeIndex: state.tabs.length,
-      ),
-    );
+  WorkspaceCubit({required ProjectCubit project})
+    : _project = project,
+      super(const WorkspaceState()) {
+    _projectSub = _project.stream.listen(_onProject);
+    _onProject(_project.state);
   }
 
-  Future<void> openProject(String name) async {
-    final existing = state.tabs.indexWhere((t) => t.name == name);
+  final ProjectCubit _project;
+  late final StreamSubscription<ProjectState> _projectSub;
+  bool _opened = false;
+
+  void openComponent(String id) {
+    final existing = state.tabs.indexWhere((t) => t.componentId == id);
     if (existing != -1) {
       emit(state.copyWith(activeIndex: existing));
       return;
     }
-    final project = await _repository.load(name);
-    final tab = (name: project.name, cubit: DocumentCubit(project.root));
+    final root = _project.state.project?.rootOf(id);
+    if (root == null) return;
+    final tab = (componentId: id, cubit: DocumentCubit(root));
     emit(
       state.copyWith(
         tabs: [...state.tabs, tab],
@@ -43,7 +42,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
   Future<void> saveActive() async {
     final tab = state.activeTab;
     if (tab == null) return;
-    await _repository.save(Project(name: tab.name, root: tab.cubit.state.root));
+    await _project.saveComponent(tab.componentId, tab.cubit.state.root);
   }
 
   void switchTo(int index) {
@@ -51,7 +50,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     emit(state.copyWith(activeIndex: index));
   }
 
-  void closeTab(int index) {
+  Future<void> closeTab(int index) async {
     if (index < 0 || index >= state.tabs.length) return;
     final closing = state.tabs[index];
     final tabs = [...state.tabs]..removeAt(index);
@@ -62,26 +61,52 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     }
 
     emit(state.copyWith(tabs: tabs, activeIndex: active));
-    closing.cubit.close();
+    await closing.cubit.close();
+  }
+
+  void _onProject(ProjectState projectState) {
+    final loaded = projectState.project;
+    if (loaded == null) return;
+    _pruneClosedComponents(loaded);
+    if (!_opened) {
+      final first = loaded.firstComponentId;
+      if (first != null) {
+        _opened = true;
+        openComponent(first);
+      }
+    }
+  }
+
+  /// Closes tabs whose component no longer exists — deleted directly, or via a
+  /// deleted folder.
+  void _pruneClosedComponents(LoadedProject loaded) {
+    final surviving = state.tabs
+        .where((t) => loaded.components.containsKey(t.componentId))
+        .toList();
+    if (surviving.length == state.tabs.length) return;
+
+    for (final t in state.tabs) {
+      if (!loaded.components.containsKey(t.componentId)) t.cubit.close();
+    }
+
+    var active = state.activeIndex;
+    if (surviving.isEmpty) {
+      active = 0;
+    } else if (active >= surviving.length) {
+      active = surviving.length - 1;
+    } else if (active < 0) {
+      active = 0;
+    }
+
+    emit(state.copyWith(tabs: surviving, activeIndex: active));
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
+    await _projectSub.cancel();
     for (final tab in state.tabs) {
-      tab.cubit.close();
+      await tab.cubit.close();
     }
     return super.close();
   }
-
-  String _uniqueName(String base) {
-    final taken = state.tabs.map((t) => t.name).toSet();
-    if (!taken.contains(base)) return base;
-    var i = 2;
-    while (taken.contains('$base $i')) {
-      i++;
-    }
-    return '$base $i';
-  }
-
-  WidgetNode _defaultRoot() => WidgetNode(id: _uuid.v4(), type: 'Column');
 }

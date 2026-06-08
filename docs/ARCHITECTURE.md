@@ -1,12 +1,14 @@
 # Architecture
 
-> This describes the implemented design. The guiding goal is a small, readable
-> codebase where **adding a new widget is one registry entry**.
+> This describes the implemented design. Two guiding goals: adding a new widget
+> is one registry entry, and a project is a directory of composable components.
 
 ## 1. The core idea
 
-The app is not a tree of Flutter widgets. It is a **serializable data tree** that
-gets rendered into Flutter widgets and exported as Dart source.
+Two ideas stacked.
+
+A **component** is not a tree of Flutter widgets. It is a serializable data tree
+that gets rendered into Flutter widgets and exported as Dart source:
 
 ```
 WidgetNode tree  ──buildNode()──►  real Flutter widgets   (the live preview)
@@ -14,7 +16,12 @@ WidgetNode tree  ──buildNode()──►  real Flutter widgets   (the live pr
                  ──toJson()────►   JSON                    (save / load)
 ```
 
-Everything below exists to support that one pipeline.
+A **project** is a directory of these components, organized in folders. Each
+component is one StatelessWidget's worth of content stored as one JSON file.
+Components reference each other by stable id (the composition step), so a `Card`
+can contain an `Avatar` without copying it.
+
+Everything below exists to support those two ideas.
 
 ## 2. Four layers
 
@@ -30,7 +37,7 @@ lib/
   main.dart
   app/        bootstrap · router · theme
   catalog/    the widget system (engine)
-  project/    the persisted document + storage
+  project/    the persisted components + storage
   editor/     editing state + UI
 ```
 
@@ -40,7 +47,7 @@ lib/
 ## 3. The model (`catalog/model/`)
 
 ```dart
-/// A single node in the prototype tree. Immutable, serializable.
+/// A single node in a component's tree. Immutable, serializable.
 @freezed
 abstract class WidgetNode with _$WidgetNode {
   const factory WidgetNode({
@@ -59,10 +66,10 @@ abstract class WidgetNode with _$WidgetNode {
 maps for `EdgeInsets`/`TextStyle`). Children live in **named slots** rather than
 one flat list, so a single widget can expose several distinct child positions
 (e.g. `IconButton`'s `icon` slot, `Row`'s `children` slot). `freezed` +
-`json_serializable` generate equality, `copyWith`, and JSON — the model stays
-declarative.
+`json_serializable` generate equality, `copyWith`, and JSON.
 
-`Project` (the persisted document) lives separately in `project/` (see §8).
+`Component` (the persisted unit — one StatelessWidget's worth of content) lives
+in `project/` (see §8).
 
 ## 4. The property system (`catalog/properties/`)
 
@@ -123,8 +130,7 @@ class WidgetDef {
 }
 ```
 
-Defs are grouped by category so the catalog stays navigable and the question
-"where does a new widget go?" answers itself:
+Defs are grouped by category so the catalog stays navigable:
 
 ```
 catalog/widgets/
@@ -160,7 +166,8 @@ Three small registry-driven traversals, mirror images of each other:
 
 - **`node_builder.dart`** — `buildNode(node)` recursively renders a node into
   real Flutter widgets for the canvas, resolving each slot and calling
-  `def.build`.
+  `def.build`. It takes an optional `NodeDecorator` so the editor can wrap each
+  node (selection tagging) without the catalog knowing what the wrapping does.
 - **`code_generator.dart`** — `generate(root, {className})` emits a
   `StatelessWidget`, mirroring `buildNode` via `def.toCode`. All callbacks are
   emitted as empty lambdas — this is a visualization tool, not an app builder.
@@ -168,33 +175,70 @@ Three small registry-driven traversals, mirror images of each other:
   doesn't declare, keeping loaded JSON consistent with the current registry.
 
 Selection outline is **not** baked into `build`; the canvas draws it as an
-overlay so the preview stays a faithful representation of the real widget.
+overlay (via the decorator) so the preview stays a faithful representation of the
+real widget.
+
+> **Composition (next step):** these three traversals each gain an injected
+> component resolver — `WidgetNode? Function(String type)` returning a referenced
+> component's current root, or null for a built-in. Resolution is a plain
+> fallback (`widgetRegistry[type]` first, else `resolve(type)`), so the registry
+> stays untouched and no widget type is special-cased.
 
 ## 8. Persistence (`project/`)
 
+A **project is a directory**, not a file. Folders are real subdirectories and
+each **component** is a `<name>.json` file containing `{ id, name, root }`. There
+is no manifest — the directory tree is the source of truth for organization.
+
 ```
 project/
-  project.dart              Project model (name + root WidgetNode), freezed/json
-  project_repository.dart    Project <-> JSON, normalizes on load and save
-  project_file_service.dart  raw file IO via dart:io + path_provider
+  component.dart            Component model (id + name + root), freezed/json
+  loaded_project.dart       in-memory index of a loaded project, freezed
+  project_repository.dart    disk <-> LoadedProject, normalizes on load and save
+  project_file_service.dart  raw directory IO via dart:io + path
 ```
 
-`ProjectFileService` reads/writes JSON files in a writable app directory.
-`ProjectRepository` maps between `Project` and JSON and runs `normalizeNode` on
-the way in and out. Arbitrary-location import/export (`file_picker`) is a later
-add.
+A `Component` is what a project used to be: one StatelessWidget's worth of
+content, one file. Its `id` is a stable uuid and is what cross-component
+references point at, so renaming or moving a file never breaks composition —
+names and folder paths are organization/display only.
+
+`LoadedProject` is the in-memory snapshot the repository hands back: `id ->
+Component` (the live roots), `id -> folder` (containing folder, `''` for the
+project root), and the set of all folder paths (so empty folders survive). It is
+derived from disk on load and kept `/`-separated in memory on every platform.
+
+`ProjectFileService` does low-level directory IO and knows nothing about JSON: it
+lists project directories, walks a project into raw folder + file entries, writes
+and deletes component files, and creates/moves/deletes folders.
+`ProjectRepository` parses those entries into `Component`s, runs `normalizeNode`
+on each root in and out, and returns a `LoadedProject`. Component rename/move are
+done by writing the new file and deleting the old, so the JSON `name` and the
+filename never drift.
 
 ## 9. State management — cubits (`editor/`, `flutter_bloc`)
 
-Two cubits, clear ownership:
+Three cubits, clear ownership:
 
-- **`WorkspaceCubit`** (`editor/workspace/`) — the open tabs. Holds a list of
-  `DocumentTab` records `(name, DocumentCubit)` and the active index. Opening,
-  closing, switching, saving, and creating tabs live here. Inactive tabs keep
-  their state alive.
+- **`ProjectCubit`** (`editor/project/`) — owns the loaded project: `id ->
+  Component` (the live roots, the single source of truth), the folder layout, and
+  persistence + CRUD. On launch it bootstraps (ensure the projects root exists;
+  if there are none, create a default project with one default component) and
+  loads the first project. Every mutation (create/rename/move/delete of
+  components and folders) is a filesystem op followed by a reload, so the
+  in-memory index always mirrors disk. `saveComponent` writes a component's file
+  and updates its in-memory copy.
 
-- **`DocumentCubit`** (`editor/document/`) — the heart. Owns one tab's state and
-  every edit is a pure tree transformation that produces a new root.
+- **`WorkspaceCubit`** (`editor/workspace/`) — which components are open as tabs,
+  and the active one. Each tab is a `(componentId, DocumentCubit)` record; the
+  display name is looked up from `ProjectCubit`, so renames reflect for free. It
+  seeds a `DocumentCubit` from a component's root when a tab opens, auto-opens
+  the first component once the project loads, routes saves through `ProjectCubit`,
+  and prunes any tab whose component no longer exists (deleted directly or via a
+  deleted folder). Inactive tabs keep their state alive.
+
+- **`DocumentCubit`** (`editor/document/`) — the heart. Owns one open component's
+  state and every edit is a pure tree transformation that produces a new root.
 
 ```dart
 class DocumentState {
@@ -205,10 +249,11 @@ class DocumentState {
 }
 ```
 
-`widget_tree`, `canvas`, and `properties` are **UI-only** features that read and
-command the active `DocumentCubit`. Selecting in the tree sets `selectedId`;
-canvas and properties both react to it — which is why selection, outline, and the
-property panel stay in sync for free.
+`widget_tree`, `canvas`, `properties`, and `files` are **UI-only** features.
+`widget_tree`/`canvas`/`properties` read and command the active `DocumentCubit`;
+`files` reads `ProjectCubit` and commands open tabs via `WorkspaceCubit`.
+Selecting in the tree sets `selectedId`; canvas and properties both react to it —
+which is why selection, outline, and the property panel stay in sync for free.
 
 Undo/redo is cheap precisely because `WidgetNode` is immutable: history is just a
 list of past roots. Pure mutations (`findById`, `updateById`, `addChild`,
@@ -238,32 +283,43 @@ lib/
     properties/
       prop.dart               Prop + PropCodec
       codecs/                 one codec per property kind
-      editors/                color, edge_insets, alignment, enum, double, …
+      editors/                string, bool, double, enum, pending, …
   project/
-    project.dart              (+ .freezed.dart + .g.dart)
-    project_repository.dart   JSON save / load
-    project_file_service.dart writable-directory file IO
+    component.dart            (+ .freezed.dart + .g.dart)
+    loaded_project.dart       (+ .freezed.dart)
+    project_repository.dart   directory <-> LoadedProject
+    project_file_service.dart writable-directory directory IO
   editor/
-    workspace/                shell + tab bar + WorkspaceCubit
+    project/                  ProjectCubit + ProjectState (the loaded project)
+    workspace/                shell · tab bar · left panel · WorkspaceCubit
     document/                 DocumentCubit + tree mutations (no UI)
-    widget_tree/              left tree view
-    canvas/                   preview area / device frame
+    files/                    Files explorer (tree, panel, actions, dialogs)
+    widget_tree/              Outline (the widget tree of the active component)
+    canvas/                   preview area / device frame + selection overlay
     properties/               property panel
+    code_view/                exported-code page
 ```
 
-Keep features small. If a feature grows a second responsibility, split it. A
-feature can reintroduce a `ui/` subfolder once it outgrows a single folder.
+Keep features small. If a feature grows a second responsibility, split it.
 
 ## 11. Editing UX
 
-- **Adaptive layout** (mobile-first): on a phone, the tree and properties are
-  reachable via drawers; on wide screens, a 3-pane layout (tree │ canvas │
-  properties).
-- **Adding widgets:** the `+` button on a slot, or (later) drag from a palette.
-  Drop is allowed only where `SlotArity` permits.
+- **Adaptive layout** (`LayoutBuilder`, ~720px breakpoint): below it, the
+  Files/Outline panel is the left drawer and Properties is the end drawer; at or
+  above it, the Files/Outline panel is a persistent left column (Properties stays
+  an end drawer). Verified down to ~360px.
+- **Left panel:** a segmented switch between **Files** (the project's folder tree
+  of components — tap a component to open it; per-row menus create/rename/move/
+  delete components and folders, all reachable by tap) and **Outline** (the
+  widget tree of the active component).
+- **Top tab bar:** open components, horizontally scrollable, keyed on component
+  id. Names come from the project, so renames show up live.
+- **Adding widgets:** the `+` button on a slot (a flat picker for now). Drop is
+  allowed only where `SlotArity` permits.
 - **Property panel:** generated from the selected node's `Prop` list; each codec
   supplies its own editor.
-- **Canvas:** device frame today; zoom, pan, and a selection overlay are planned.
+- **Canvas:** device frame with tap-to-select (hit-tests the tagged node under
+  the pointer) and a selection outline drawn as an overlay; zoom and pan planned.
 
 ## 12. Dependencies (kept minimal)
 
@@ -271,20 +327,25 @@ feature can reintroduce a `ui/` subfolder once it outgrows a single folder.
 |----------------------------------|--------------------------------------------|
 | `flutter_bloc`                   | Cubits — the chosen state management.      |
 | `go_router`                      | Routing.                                   |
-| `path_provider`                  | Writable directory for JSON projects.      |
-| `uuid`                           | Stable node ids.                           |
+| `path_provider`                  | Writable directory for projects.           |
+| `path`                           | Correct cross-platform path joins/relative.|
+| `uuid`                           | Stable node and component ids.             |
 | `freezed` / `json_serializable`  | Model equality, `copyWith`, and JSON.      |
 
 Everything else — color picker, edge-insets editor, alignment grid, tabs,
-undo/redo, drag-and-drop, code export — is hand-rolled. Add a dependency only
+undo/redo, Files explorer, code export — is hand-rolled. Add a dependency only
 when it clearly beats writing it, and note why in the PR.
 
 ## 13. Deferred (cheap to add later, by design)
 
-- Reorder-by-drag and move/reparent (immutable tree → remove + insert).
-- Copy/paste of subtrees.
+- **Component composition:** referencing one component inside another (resolver
+  threaded through the `catalog/` traversals, cycle detection, per-class
+  multi-component export). The model already carries the stable ids it needs.
+- Parameterized components (passing props into your own widgets).
+- A categorized "add widget" picker (the slot `+` is flat for now).
+- Multi-project switching UI (bootstrap loads the first/default project today).
 - Real editors for the `PendingEditor` placeholders (color, alignment, …).
-- A palette feature and drag-to-add.
-- A `CanvasCubit` for zoom / pan / device size, plus the selection overlay.
+- Reorder-by-drag, move/reparent, and copy/paste of subtrees.
+- A `CanvasCubit` for zoom / pan / device size.
 - Cupertino catalog (just more `WidgetDef`s).
 - `file_picker` for arbitrary import/export locations.

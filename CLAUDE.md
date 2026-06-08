@@ -6,8 +6,10 @@ writing code. Full detail lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md
 ## What this is
 
 A cross-platform Flutter tool for **prototyping and visualizing widgets** by
-composing standard Flutter widgets. It is **not** an app builder — it produces
-visual layouts and exportable Dart code, not working apps.
+composing standard Flutter widgets. A project is a folder of **components** (each
+a StatelessWidget's worth of content); components can reference each other. It is
+**not** an app builder — it produces visual layouts and exportable Dart code, not
+working apps.
 
 Targets: iOS, Android, macOS, Windows, Linux. Material first (Cupertino later).
 
@@ -39,18 +41,20 @@ lib/
   main.dart
   app/        bootstrap · router · theme
   catalog/    the widget system: model · defs · props · registry · render · codegen
-  project/    the persisted document + its storage
+  project/    a project's components on disk + their storage
   editor/     editing state + UI (one folder per feature)
 ```
 
 - **`catalog/` depends on nothing internal.** It is the engine. Adding a widget
   or a property type touches only `catalog/`.
-- **`project/`** holds the `Project` model, the repository, and file IO.
+- **`project/`** holds the `Component` model, the `LoadedProject` index, the
+  repository, and file IO.
 - **`editor/`** holds the cubits and the UI. UI features read and command the
-  active cubit; they never duplicate document state.
+  cubits; they never duplicate state.
 - **`app/`** wires everything together (providers, router, theme).
-- **State:** `WorkspaceCubit` owns the open tabs; one **`DocumentCubit`** per tab
-  owns that tab's tree + selection + undo/redo.
+- **State:** `ProjectCubit` owns the loaded project (its components + folders +
+  persistence); `WorkspaceCubit` owns which components are open as tabs; one
+  **`DocumentCubit`** per open component owns its tree + selection + undo/redo.
 
 ### Inside `catalog/`
 
@@ -66,6 +70,18 @@ catalog/
   widgets/               concrete defs by category: layout/ display/ input/
   properties/            prop.dart + codecs/ + editors/
 ```
+
+## Projects & components
+
+- A **project** is a directory; **components** are `<name>.json` files in folders.
+  A component is `{ id, name, root }` — one StatelessWidget's worth of content.
+- **References are by component id (uuid), never name or path**, so renames and
+  moves never break composition. Filenames track the component name; folders are
+  organization only.
+- `ProjectCubit` holds the loaded project and is the source of truth for roots;
+  `WorkspaceCubit` tracks open components (tabs); `DocumentCubit` edits one.
+- CRUD is filesystem-level: each op writes/renames/deletes on disk, then reloads
+  the index. There is no manifest — disk is the source of truth.
 
 ## Adding a widget
 
@@ -97,6 +113,8 @@ Never branch on widget type in the properties panel — the panel renders whatev
 - Children live in named **slots** (`Map<String, List<WidgetNode>>`); drop
   targets respect `SlotArity` (`single` / `many`).
 - Undo/redo = lists of past/future roots in `DocumentCubit`. Don't mutate in place.
+- Persistence mutations live in `ProjectCubit` (op then reload). The repository
+  and file service stay thin.
 
 ## Code style
 
@@ -108,10 +126,10 @@ Never branch on widget type in the properties panel — the panel renders whatev
 ## Dependencies (minimize hard)
 
 Used and expected: `flutter_bloc` (state), `go_router` (routing),
-`path_provider` (storage), `uuid` (node ids), `freezed` + `json_serializable`
-(model codegen). Hand-roll small UI (color picker, alignment grid, tabs,
-drag-and-drop) rather than adding a package. Any new dependency needs a one-line
-justification in the PR.
+`path_provider` + `path` (storage and cross-platform paths), `uuid` (ids),
+`freezed` + `json_serializable` (model codegen). Hand-roll small UI (color
+picker, alignment grid, tabs, Files explorer, drag-and-drop) rather than adding a
+package. Any new dependency needs a one-line justification in the PR.
 
 ## Don't
 
@@ -120,4 +138,5 @@ justification in the PR.
 - Don't create large multi-purpose files or god-cubits.
 - Don't special-case individual widget types outside the registry.
 - Don't make `catalog/` depend on `editor/` or `app/`.
+- Don't reference components by name or path — always by id.
 - Don't add a dependency for something small and self-contained.

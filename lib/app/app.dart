@@ -1,5 +1,6 @@
 import 'package:fludget/app/router.dart';
 import 'package:fludget/app/theme.dart';
+import 'package:fludget/editor/project/project_cubit.dart';
 import 'package:fludget/editor/workspace/workspace_cubit.dart';
 import 'package:fludget/project/project_file_service.dart';
 import 'package:fludget/project/project_repository.dart';
@@ -13,10 +14,18 @@ class FludgetApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return RepositoryProvider(
       create: (_) => ProjectRepository(fileService: ProjectFileService()),
-      child: BlocProvider(
-        create: (context) =>
-            WorkspaceCubit(repository: context.read<ProjectRepository>())
-              ..newDocument(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                ProjectCubit(repository: context.read<ProjectRepository>())
+                  ..bootstrap(),
+          ),
+          BlocProvider(
+            create: (context) =>
+                WorkspaceCubit(project: context.read<ProjectCubit>()),
+          ),
+        ],
         child: MaterialApp.router(
           title: 'Fludget',
           theme: AppTheme.light,

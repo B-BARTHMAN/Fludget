@@ -3,18 +3,23 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'workspace_state.freezed.dart';
 
-typedef DocumentTab = ({String name, DocumentCubit cubit});
+/// One open component as a top-bar tab. Keyed on component id; the display name
+/// is looked up from the project, so renames reflect for free.
+typedef DocumentTab = ({String componentId, DocumentCubit cubit});
 
 @freezed
 abstract class WorkspaceState with _$WorkspaceState {
-  const WorkspaceState._();
-
   const factory WorkspaceState({
     @Default(<DocumentTab>[]) List<DocumentTab> tabs,
     @Default(0) int activeIndex,
   }) = _WorkspaceState;
+  
+  const WorkspaceState._();
 
   bool get hasTabs => tabs.isNotEmpty;
+
+  bool isOpen(String componentId) =>
+      tabs.any((t) => t.componentId == componentId);
 
   DocumentTab? get activeTab {
     if (tabs.isEmpty) return null;

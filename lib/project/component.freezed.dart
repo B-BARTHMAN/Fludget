@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'project.dart';
+part of 'component.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -13,42 +13,42 @@ part of 'project.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$Project {
+mixin _$Component {
 
- String get name; WidgetNode get root;
-/// Create a copy of Project
+ String get id; String get name; WidgetNode get root;
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProjectCopyWith<Project> get copyWith => _$ProjectCopyWithImpl<Project>(this as Project, _$identity);
+$ComponentCopyWith<Component> get copyWith => _$ComponentCopyWithImpl<Component>(this as Component, _$identity);
 
-  /// Serializes this Project to a JSON map.
+  /// Serializes this Component to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Project&&(identical(other.name, name) || other.name == name)&&(identical(other.root, root) || other.root == root));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Component&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.root, root) || other.root == root));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,root);
+int get hashCode => Object.hash(runtimeType,id,name,root);
 
 @override
 String toString() {
-  return 'Project(name: $name, root: $root)';
+  return 'Component(id: $id, name: $name, root: $root)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProjectCopyWith<$Res>  {
-  factory $ProjectCopyWith(Project value, $Res Function(Project) _then) = _$ProjectCopyWithImpl;
+abstract mixin class $ComponentCopyWith<$Res>  {
+  factory $ComponentCopyWith(Component value, $Res Function(Component) _then) = _$ComponentCopyWithImpl;
 @useResult
 $Res call({
- String name, WidgetNode root
+ String id, String name, WidgetNode root
 });
 
 
@@ -56,23 +56,24 @@ $WidgetNodeCopyWith<$Res> get root;
 
 }
 /// @nodoc
-class _$ProjectCopyWithImpl<$Res>
-    implements $ProjectCopyWith<$Res> {
-  _$ProjectCopyWithImpl(this._self, this._then);
+class _$ComponentCopyWithImpl<$Res>
+    implements $ComponentCopyWith<$Res> {
+  _$ComponentCopyWithImpl(this._self, this._then);
 
-  final Project _self;
-  final $Res Function(Project) _then;
+  final Component _self;
+  final $Res Function(Component) _then;
 
-/// Create a copy of Project
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? root = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? root = null,}) {
   return _then(_self.copyWith(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,root: null == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
 as WidgetNode,
   ));
 }
-/// Create a copy of Project
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -85,8 +86,8 @@ $WidgetNodeCopyWith<$Res> get root {
 }
 
 
-/// Adds pattern-matching-related methods to [Project].
-extension ProjectPatterns on Project {
+/// Adds pattern-matching-related methods to [Component].
+extension ComponentPatterns on Component {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -99,10 +100,10 @@ extension ProjectPatterns on Project {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Project value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Component value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _Project() when $default != null:
+case _Component() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -121,10 +122,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Project value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Component value)  $default,){
 final _that = this;
 switch (_that) {
-case _Project():
+case _Component():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -142,10 +143,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Project value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Component value)?  $default,){
 final _that = this;
 switch (_that) {
-case _Project() when $default != null:
+case _Component() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -163,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  WidgetNode root)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode root)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _Project() when $default != null:
-return $default(_that.name,_that.root);case _:
+case _Component() when $default != null:
+return $default(_that.id,_that.name,_that.root);case _:
   return orElse();
 
 }
@@ -184,10 +185,10 @@ return $default(_that.name,_that.root);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  WidgetNode root)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode root)  $default,) {final _that = this;
 switch (_that) {
-case _Project():
-return $default(_that.name,_that.root);case _:
+case _Component():
+return $default(_that.id,_that.name,_that.root);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +205,10 @@ return $default(_that.name,_that.root);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  WidgetNode root)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  WidgetNode root)?  $default,) {final _that = this;
 switch (_that) {
-case _Project() when $default != null:
-return $default(_that.name,_that.root);case _:
+case _Component() when $default != null:
+return $default(_that.id,_that.name,_that.root);case _:
   return null;
 
 }
@@ -218,47 +219,48 @@ return $default(_that.name,_that.root);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _Project implements Project {
-  const _Project({required this.name, required this.root});
-  factory _Project.fromJson(Map<String, dynamic> json) => _$ProjectFromJson(json);
+class _Component implements Component {
+  const _Component({required this.id, required this.name, required this.root});
+  factory _Component.fromJson(Map<String, dynamic> json) => _$ComponentFromJson(json);
 
+@override final  String id;
 @override final  String name;
 @override final  WidgetNode root;
 
-/// Create a copy of Project
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProjectCopyWith<_Project> get copyWith => __$ProjectCopyWithImpl<_Project>(this, _$identity);
+_$ComponentCopyWith<_Component> get copyWith => __$ComponentCopyWithImpl<_Component>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$ProjectToJson(this, );
+  return _$ComponentToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Project&&(identical(other.name, name) || other.name == name)&&(identical(other.root, root) || other.root == root));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Component&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.root, root) || other.root == root));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,root);
+int get hashCode => Object.hash(runtimeType,id,name,root);
 
 @override
 String toString() {
-  return 'Project(name: $name, root: $root)';
+  return 'Component(id: $id, name: $name, root: $root)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProjectCopyWith<$Res> implements $ProjectCopyWith<$Res> {
-  factory _$ProjectCopyWith(_Project value, $Res Function(_Project) _then) = __$ProjectCopyWithImpl;
+abstract mixin class _$ComponentCopyWith<$Res> implements $ComponentCopyWith<$Res> {
+  factory _$ComponentCopyWith(_Component value, $Res Function(_Component) _then) = __$ComponentCopyWithImpl;
 @override @useResult
 $Res call({
- String name, WidgetNode root
+ String id, String name, WidgetNode root
 });
 
 
@@ -266,24 +268,25 @@ $Res call({
 
 }
 /// @nodoc
-class __$ProjectCopyWithImpl<$Res>
-    implements _$ProjectCopyWith<$Res> {
-  __$ProjectCopyWithImpl(this._self, this._then);
+class __$ComponentCopyWithImpl<$Res>
+    implements _$ComponentCopyWith<$Res> {
+  __$ComponentCopyWithImpl(this._self, this._then);
 
-  final _Project _self;
-  final $Res Function(_Project) _then;
+  final _Component _self;
+  final $Res Function(_Component) _then;
 
-/// Create a copy of Project
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? root = null,}) {
-  return _then(_Project(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? root = null,}) {
+  return _then(_Component(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,root: null == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
 as WidgetNode,
   ));
 }
 
-/// Create a copy of Project
+/// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

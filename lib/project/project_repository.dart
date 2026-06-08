@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:fludget/catalog/normalizer.dart';
-import 'package:fludget/project/project.dart';
+import 'package:fludget/project/component.dart';
+import 'package:fludget/project/loaded_project.dart';
 import 'package:fludget/project/project_file_service.dart';
 
+/// Maps between the on-disk directory layout and [LoadedProject], normalizing
+/// component roots against the registry on the way in and out.
 class ProjectRepository {
   ProjectRepository({required ProjectFileService fileService})
     : _fileService = fileService;
@@ -12,32 +15,57 @@ class ProjectRepository {
 
   static const _extension = '.json';
 
-  Future<List<String>> listProjectNames() async {
-    final names = await _fileService.listFileNames();
-    return [
-      for (final n in names)
-        if (n.endsWith(_extension))
-          n.substring(0, n.length - _extension.length),
-    ];
+  Future<List<String>> listProjects() => _fileService.listProjectNames();
+
+  Future<void> createProject(String name) => _fileService.createProject(name);
+
+  Future<LoadedProject> loadProject(String name) async {
+    final raw = await _fileService.readProject(name);
+
+    final components = <String, Component>{};
+    final folderOf = <String, String>{};
+    for (final file in raw.files) {
+      final json = jsonDecode(file.contents) as Map<String, dynamic>;
+      final component = Component.fromJson(json);
+      final clean = component.copyWith(root: normalizeNode(component.root));
+      components[clean.id] = clean;
+      folderOf[clean.id] = file.folder;
+    }
+
+    return LoadedProject(
+      name: name,
+      components: components,
+      folderOf: folderOf,
+      folders: raw.folders.toSet(),
+    );
   }
 
-  Future<Project> load(String projectName) async {
-    final raw = await _fileService.read(_fileName(projectName));
-    final json = jsonDecode(raw) as Map<String, dynamic>;
-    final project = Project.fromJson(json);
-    return project.copyWith(root: normalizeNode(project.root));
-  }
-
-  Future<void> save(Project project) async {
-    final clean = project.copyWith(root: normalizeNode(project.root));
-    await _fileService.write(
-      _fileName(project.name),
+  Future<void> saveComponent(
+    String projectName,
+    Component component,
+    String folder,
+  ) async {
+    final clean = component.copyWith(root: normalizeNode(component.root));
+    await _fileService.writeComponent(
+      projectName,
+      folder,
+      '${component.name}$_extension',
       jsonEncode(clean.toJson()),
     );
   }
 
-  Future<void> delete(String projectName) =>
-      _fileService.delete(_fileName(projectName));
+  Future<void> deleteComponent(
+    String projectName,
+    String folder,
+    String name,
+  ) => _fileService.deleteComponent(projectName, folder, '$name$_extension');
 
-  String _fileName(String projectName) => '$projectName$_extension';
+  Future<void> createFolder(String projectName, String path) =>
+      _fileService.createFolder(projectName, path);
+
+  Future<void> moveFolder(String projectName, String fromPath, String toPath) =>
+      _fileService.moveFolder(projectName, fromPath, toPath);
+
+  Future<void> deleteFolder(String projectName, String path) =>
+      _fileService.deleteFolder(projectName, path);
 }

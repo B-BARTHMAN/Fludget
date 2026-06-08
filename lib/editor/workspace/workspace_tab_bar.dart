@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
 class WorkspaceTabBar extends StatelessWidget {
   const WorkspaceTabBar({
@@ -8,7 +6,7 @@ class WorkspaceTabBar extends StatelessWidget {
     required this.activeIndex,
     required this.onSelect,
     required this.onClose,
-    required this.onNew,
+    this.onNew,
     super.key,
   });
 
@@ -16,7 +14,7 @@ class WorkspaceTabBar extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int> onSelect;
   final ValueChanged<int> onClose;
-  final VoidCallback onNew;
+  final VoidCallback? onNew;
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +74,12 @@ class WorkspaceTabBar extends StatelessWidget {
               },
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: onNew,
-            tooltip: 'New Document',
-          ),
+          if (onNew != null)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: onNew,
+              tooltip: 'New Component',
+            ),
         ],
       ),
     );
