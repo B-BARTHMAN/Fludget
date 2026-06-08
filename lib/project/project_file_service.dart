@@ -63,7 +63,12 @@ class ProjectFileService {
   ) async {
     final dir = Directory(await _dirPath(projectName, folder));
     if (!dir.existsSync()) await dir.create(recursive: true);
-    await File(p.join(dir.path, fileName)).writeAsString(contents);
+    final target = File(p.join(dir.path, fileName));
+    final tmp = File('${target.path}.tmp');
+    await tmp.writeAsString(contents, flush: true);
+    await tmp.rename(
+      target.path,
+    );
   }
 
   Future<void> deleteComponent(

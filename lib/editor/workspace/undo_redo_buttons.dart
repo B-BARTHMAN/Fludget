@@ -25,7 +25,7 @@ class UndoRedoButtons extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.redo),
               tooltip: 'Redo',
-              onPressed: state.canUndo ? document.redo : null,
+              onPressed: state.canRedo ? document.redo : null,
             ),
           ],
         );

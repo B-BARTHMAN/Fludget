@@ -30,11 +30,11 @@ final columnDef = WidgetDef(
     crossAxisAlignment: _cross.read(node),
     children: children.many('children'),
   ),
-  toCode: (node, c) =>
+  toCode: (node, children) =>
       '''
 Column(
   mainAxisAlignment: ${_main.code(node)},
   crossAxisAlignment: ${_cross.code(node)},
-  children: [${c.many('children').join(', ')}],
+  children: [${children.many('children').join(', ')}],
 )''',
 );

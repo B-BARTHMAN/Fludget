@@ -11,5 +11,6 @@ final textDef = WidgetDef(
   type: 'Text',
   props: [_data, _style],
   build: (node, children) => Text(_data.read(node), style: _style.read(node)),
-  toCode: (node, c) => 'Text(${_data.code(node)}, style: ${_style.code(node)})',
+  toCode: (node, children) =>
+      'Text(${_data.code(node)}, style: ${_style.code(node)})',
 );

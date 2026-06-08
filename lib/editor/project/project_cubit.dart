@@ -73,7 +73,9 @@ class ProjectCubit extends Cubit<ProjectState> {
       current.copyWith(name: unique),
       folder,
     );
-    await _repository.deleteComponent(loaded.name, folder, current.name);
+    if (unique.toLowerCase() != current.name.toLowerCase()) {
+      await _repository.deleteComponent(loaded.name, folder, current.name);
+    }
     await _reload();
   }
 
@@ -94,7 +96,9 @@ class ProjectCubit extends Cubit<ProjectState> {
       current.copyWith(name: unique),
       toFolder,
     );
-    await _repository.deleteComponent(loaded.name, fromFolder, current.name);
+    if (unique.toLowerCase() != current.name.toLowerCase()) {
+      await _repository.deleteComponent(loaded.name, toFolder, current.name);
+    }
     await _reload();
   }
 

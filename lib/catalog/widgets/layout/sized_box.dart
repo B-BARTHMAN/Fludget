@@ -16,7 +16,7 @@ final sizedBoxDef = WidgetDef(
     height: _height.read(node),
     child: children.one('child'),
   ),
-  toCode: (node, c) =>
+  toCode: (node, children) =>
       'SizedBox(width: ${_width.code(node)}, '
-      'height: ${_height.code(node)}, child: ${c.one('child') ?? 'null'})',
+      'height: ${_height.code(node)}, child: ${children.one('child') ?? 'null'})',
 );

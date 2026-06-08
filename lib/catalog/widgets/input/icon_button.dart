@@ -27,7 +27,7 @@ final iconButtonDef = WidgetDef(
     onPressed: () {},
     icon: children.one('icon') ?? const Icon(Icons.star),
   ),
-  toCode: (node, c) =>
+  toCode: (node, children) =>
       '''
 IconButton(
   iconSize: ${_iconSize.code(node)},
@@ -35,6 +35,6 @@ IconButton(
   padding: ${_padding.code(node)},
   color: ${_color.code(node)},
   onPressed: () {},
-  icon: ${c.one('icon') ?? 'const Icon(Icons.star)'},
+  icon: ${children.one('icon') ?? 'const Icon(Icons.star)'},
 )''',
 );

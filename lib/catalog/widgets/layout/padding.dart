@@ -17,6 +17,6 @@ final paddingDef = WidgetDef(
     padding: _padding.read(node) ?? EdgeInsets.zero,
     child: children.one('child'),
   ),
-  toCode: (node, c) =>
-      'Padding(padding: ${_padding.code(node)}, child: ${c.one('child') ?? 'null'})',
+  toCode: (node, children) =>
+      'Padding(padding: ${_padding.code(node)}, child: ${children.one('child') ?? 'null'})',
 );

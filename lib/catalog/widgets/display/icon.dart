@@ -14,6 +14,6 @@ final iconDef = WidgetDef(
   props: [_icon, _size, _color],
   build: (node, children) =>
       Icon(_icon.read(node), size: _size.read(node), color: _color.read(node)),
-  toCode: (node, c) =>
+  toCode: (node, children) =>
       'Icon(${_icon.code(node)}, size: ${_size.code(node)}, color: ${_color.code(node)})',
 );

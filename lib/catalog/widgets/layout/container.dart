@@ -25,7 +25,7 @@ final containerDef = WidgetDef(
     alignment: _alignment.read(node),
     child: children.one('child'),
   ),
-  toCode: (node, c) =>
+  toCode: (node, children) =>
       '''
 Container(
   width: ${_width.code(node)},
@@ -33,6 +33,6 @@ Container(
   color: ${_color.code(node)},
   padding: ${_padding.code(node)},
   alignment: ${_alignment.code(node)},
-  child: ${c.one('child') ?? 'null'},
+  child: ${children.one('child') ?? 'null'},
 )''',
 );

@@ -81,12 +81,13 @@ Future<void> moveFolder(BuildContext context, ExplorerFolder folder) async {
   final project = context.read<ProjectCubit>();
   final loaded = project.state.project;
   if (loaded == null) return;
-  final destinations = <String>{'', ...loaded.folders}..removeWhere(
-    (f) =>
-        f == folder.path ||
-        f.startsWith('${folder.path}/') ||
-        f == _parentOf(folder.path),
-  );
+  final destinations = <String>{'', ...loaded.folders}
+    ..removeWhere(
+      (f) =>
+          f == folder.path ||
+          f.startsWith('${folder.path}/') ||
+          f == _parentOf(folder.path),
+    );
   final dest = await pickFolder(
     context,
     projectName: loaded.name,
