@@ -12,7 +12,7 @@ abstract class Component with _$Component {
   const factory Component({
     required String id,
     required String name,
-    required WidgetNode root,
+    WidgetNode? root,
   }) = _Component;
 
   factory Component.fromJson(Map<String, dynamic> json) =>

@@ -9,7 +9,9 @@ part of 'component.dart';
 _Component _$ComponentFromJson(Map<String, dynamic> json) => _Component(
   id: json['id'] as String,
   name: json['name'] as String,
-  root: WidgetNode.fromJson(json['root'] as Map<String, dynamic>),
+  root: json['root'] == null
+      ? null
+      : WidgetNode.fromJson(json['root'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ComponentToJson(_Component instance) =>

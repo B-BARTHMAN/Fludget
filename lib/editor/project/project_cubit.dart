@@ -28,7 +28,7 @@ class ProjectCubit extends Cubit<ProjectState> {
   }
 
   /// Persists component [id] with [root] and updates the in-memory copy.
-  Future<void> saveComponent(String id, WidgetNode root) async {
+  Future<void> saveComponent(String id, WidgetNode? root) async {
     final loaded = state.project;
     final current = loaded?.components[id];
     if (loaded == null || current == null) return;
@@ -54,7 +54,7 @@ class ProjectCubit extends Cubit<ProjectState> {
     final loaded = state.project;
     if (loaded == null) return null;
     final unique = _uniqueComponentName(loaded, folder, name);
-    final component = Component(id: _uuid.v4(), name: unique, root: _newRoot());
+    final component = Component(id: _uuid.v4(), name: unique);
     await _repository.saveComponent(loaded.name, component, folder);
     await _reload();
     return component.id;
@@ -163,10 +163,7 @@ class ProjectCubit extends Cubit<ProjectState> {
     return name;
   }
 
-  Component _defaultComponent() =>
-      Component(id: _uuid.v4(), name: 'Untitled', root: _newRoot());
-
-  WidgetNode _newRoot() => WidgetNode(id: _uuid.v4(), type: 'Column');
+  Component _defaultComponent() => Component(id: _uuid.v4(), name: 'Untitled');
 
   String _uniqueComponentName(
     LoadedProject loaded,

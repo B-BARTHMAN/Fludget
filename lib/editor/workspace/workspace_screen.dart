@@ -1,6 +1,7 @@
 import 'package:fludget/editor/canvas/canvas_view.dart';
 import 'package:fludget/editor/code_view/code_view_page.dart';
 import 'package:fludget/editor/document/document_cubit.dart';
+import 'package:fludget/editor/document/document_state.dart';
 import 'package:fludget/editor/project/project_cubit.dart';
 import 'package:fludget/editor/project/project_state.dart';
 import 'package:fludget/editor/properties/properties_panel.dart';
@@ -14,6 +15,8 @@ import 'package:fludget/project/loaded_project.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+enum _CloseAction { save, discard, cancel }
 
 const _wideBreakpoint = 720.0;
 
@@ -46,6 +49,7 @@ class _Workspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final workspace = context.read<WorkspaceCubit>();
     return BlocBuilder<WorkspaceCubit, WorkspaceState>(
       builder: (context, state) {
         final active = state.activeDocument;
@@ -82,6 +86,14 @@ class _Workspace extends StatelessWidget {
                   control: true,
                 ): () =>
                     active?.redo(),
+                const SingleActivator(
+                  LogicalKeyboardKey.keyS,
+                  control: true,
+                ): workspace.saveActive,
+                const SingleActivator(
+                  LogicalKeyboardKey.keyS,
+                  meta: true,
+                ): workspace.saveActive,
               },
               child: Focus(
                 autofocus: true,
@@ -111,10 +123,19 @@ class _Workspace extends StatelessWidget {
         : BlocProvider.value(value: active, child: child);
 
     final tabBar = WorkspaceTabBar(
-      tabs: [for (final t in state.tabs) _nameOf(t.componentId)],
+      tabs: [
+        for (final t in state.tabs)
+          (name: _nameOf(t.componentId), cubit: t.cubit),
+      ],
       activeIndex: state.activeIndex,
       onSelect: workspace.switchTo,
-      onClose: workspace.closeTab,
+      onClose: (index) => _confirmClose(
+        context,
+        workspace,
+        name: _nameOf(state.tabs[index].componentId),
+        index: index,
+        isDirty: state.tabs[index].cubit.state.isDirty,
+      ),
     );
 
     final canvasColumn = Column(
@@ -151,10 +172,14 @@ class _Workspace extends StatelessWidget {
                 tooltip: 'Properties',
               ),
             ),
-            IconButton(
-              onPressed: workspace.saveActive,
-              icon: const Icon(Icons.save_outlined),
-              tooltip: 'Save',
+            BlocBuilder<DocumentCubit, DocumentState>(
+              bloc: active,
+              buildWhen: (p, c) => p.isDirty != c.isDirty,
+              builder: (context, docState) => IconButton(
+                onPressed: docState.isDirty ? workspace.saveActive : null,
+                icon: Icon(docState.isDirty ? Icons.save : Icons.save_outlined),
+                tooltip: 'Save',
+              ),
             ),
           ],
         ],
@@ -192,5 +217,49 @@ class _Workspace extends StatelessWidget {
             )
           : withDoc(canvasColumn),
     );
+  }
+}
+
+Future<void> _confirmClose(
+  BuildContext context,
+  WorkspaceCubit workspace, {
+  required String name,
+  required int index,
+  required bool isDirty,
+}) async {
+  if (!isDirty) {
+    await workspace.closeTab(index);
+    return;
+  }
+  final action = await showDialog<_CloseAction>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Save changes to "$name"?'),
+      content: const Text("Your changes will be lost if you don't save them."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, _CloseAction.cancel),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _CloseAction.discard),
+          child: const Text('Discard'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _CloseAction.save),
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+  switch (action) {
+    case _CloseAction.save:
+      await workspace.saveTabAt(index);
+      await workspace.closeTab(index);
+    case _CloseAction.discard:
+      await workspace.closeTab(index);
+    case _CloseAction.cancel:
+    case null:
+      break;
   }
 }

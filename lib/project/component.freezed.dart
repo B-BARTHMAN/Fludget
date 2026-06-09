@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Component {
 
- String get id; String get name; WidgetNode get root;
+ String get id; String get name; WidgetNode? get root;
 /// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,11 +48,11 @@ abstract mixin class $ComponentCopyWith<$Res>  {
   factory $ComponentCopyWith(Component value, $Res Function(Component) _then) = _$ComponentCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, WidgetNode root
+ String id, String name, WidgetNode? root
 });
 
 
-$WidgetNodeCopyWith<$Res> get root;
+$WidgetNodeCopyWith<$Res>? get root;
 
 }
 /// @nodoc
@@ -65,21 +65,24 @@ class _$ComponentCopyWithImpl<$Res>
 
 /// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? root = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? root = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,root: null == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
-as WidgetNode,
+as String,root: freezed == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
+as WidgetNode?,
   ));
 }
 /// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$WidgetNodeCopyWith<$Res> get root {
-  
-  return $WidgetNodeCopyWith<$Res>(_self.root, (value) {
+$WidgetNodeCopyWith<$Res>? get root {
+    if (_self.root == null) {
+    return null;
+  }
+
+  return $WidgetNodeCopyWith<$Res>(_self.root!, (value) {
     return _then(_self.copyWith(root: value));
   });
 }
@@ -164,7 +167,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode root)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode? root)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Component() when $default != null:
 return $default(_that.id,_that.name,_that.root);case _:
@@ -185,7 +188,7 @@ return $default(_that.id,_that.name,_that.root);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode root)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  WidgetNode? root)  $default,) {final _that = this;
 switch (_that) {
 case _Component():
 return $default(_that.id,_that.name,_that.root);case _:
@@ -205,7 +208,7 @@ return $default(_that.id,_that.name,_that.root);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  WidgetNode root)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  WidgetNode? root)?  $default,) {final _that = this;
 switch (_that) {
 case _Component() when $default != null:
 return $default(_that.id,_that.name,_that.root);case _:
@@ -220,12 +223,12 @@ return $default(_that.id,_that.name,_that.root);case _:
 @JsonSerializable()
 
 class _Component implements Component {
-  const _Component({required this.id, required this.name, required this.root});
+  const _Component({required this.id, required this.name, this.root});
   factory _Component.fromJson(Map<String, dynamic> json) => _$ComponentFromJson(json);
 
 @override final  String id;
 @override final  String name;
-@override final  WidgetNode root;
+@override final  WidgetNode? root;
 
 /// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
@@ -260,11 +263,11 @@ abstract mixin class _$ComponentCopyWith<$Res> implements $ComponentCopyWith<$Re
   factory _$ComponentCopyWith(_Component value, $Res Function(_Component) _then) = __$ComponentCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, WidgetNode root
+ String id, String name, WidgetNode? root
 });
 
 
-@override $WidgetNodeCopyWith<$Res> get root;
+@override $WidgetNodeCopyWith<$Res>? get root;
 
 }
 /// @nodoc
@@ -277,12 +280,12 @@ class __$ComponentCopyWithImpl<$Res>
 
 /// Create a copy of Component
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? root = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? root = freezed,}) {
   return _then(_Component(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,root: null == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
-as WidgetNode,
+as String,root: freezed == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
+as WidgetNode?,
   ));
 }
 
@@ -290,9 +293,12 @@ as WidgetNode,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$WidgetNodeCopyWith<$Res> get root {
-  
-  return $WidgetNodeCopyWith<$Res>(_self.root, (value) {
+$WidgetNodeCopyWith<$Res>? get root {
+    if (_self.root == null) {
+    return null;
+  }
+
+  return $WidgetNodeCopyWith<$Res>(_self.root!, (value) {
     return _then(_self.copyWith(root: value));
   });
 }

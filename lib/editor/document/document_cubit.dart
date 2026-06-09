@@ -7,14 +7,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 class DocumentCubit extends Cubit<DocumentState> {
-  DocumentCubit(WidgetNode root) : super(DocumentState(root: root));
+  DocumentCubit(WidgetNode? root)
+    : super(DocumentState(root: root, savedRoot: root));
 
   static const _uuid = Uuid();
 
   void select(String? id) => emit(state.copyWith(selectedId: id));
 
+  /// Sets the component's first top-level widget. No-op once a root exists.
+  void setRoot(String type) {
+    if (state.root != null) return;
+    _commit(WidgetNode(id: _uuid.v4(), type: type));
+  }
+
   void addChild(String parentId, String slot, String type) {
-    final parent = tree.findById(state.root, parentId);
+    final root = state.root;
+    if (root == null) return;
+    final parent = tree.findById(root, parentId);
     if (parent == null) return;
     final arity = widgetRegistry[parent.type]?.slots[slot];
     if (arity == null) return; // not a real slot on this parent
@@ -23,18 +32,22 @@ class DocumentCubit extends Cubit<DocumentState> {
       return;
     }
     final child = WidgetNode(id: _uuid.v4(), type: type);
-    _commit(tree.addChild(state.root, parentId, slot, child));
+    _commit(tree.addChild(root, parentId, slot, child));
   }
 
-  void updateProps(String id, Map<String, dynamic> changes) =>
-      _commit(tree.updateProps(state.root, id, changes));
+  void updateProps(String id, Map<String, dynamic> changes) {
+    final root = state.root;
+    if (root == null) return;
+    _commit(tree.updateProps(root, id, changes));
+  }
 
   void delete(String id) {
-    if (id == state.root.id) return; // never delete the root
+    final root = state.root;
+    if (root == null || id == root.id) return; // never delete the root
     emit(
       state.copyWith(
-        root: tree.removeById(state.root, id),
-        past: [...state.past, state.root],
+        root: tree.removeById(root, id),
+        past: [...state.past, root],
         future: const [],
         selectedId: state.selectedId == id ? null : state.selectedId,
       ),
@@ -48,7 +61,7 @@ class DocumentCubit extends Cubit<DocumentState> {
       state.copyWith(
         root: previous,
         past: state.past.sublist(0, state.past.length - 1),
-        future: [state.root, ...state.future],
+        future: [state.root!, ...state.future],
         selectedId: _keepSelection(previous),
       ),
     );
@@ -60,23 +73,28 @@ class DocumentCubit extends Cubit<DocumentState> {
     emit(
       state.copyWith(
         root: next,
-        past: [...state.past, state.root],
+        past: [...state.past, state.root!],
         future: state.future.sublist(1),
         selectedId: _keepSelection(next),
       ),
     );
   }
 
-  void _commit(WidgetNode newRoot) => emit(
+  void markSaved(WidgetNode? savedRoot) =>
+      emit(state.copyWith(savedRoot: savedRoot));
+
+  void _commit(WidgetNode? newRoot) => emit(
     state.copyWith(
       root: newRoot,
-      past: [...state.past, state.root],
+      past: [...state.past, state.root!],
       future: const [],
     ),
   );
 
-  String? _keepSelection(WidgetNode root) =>
-      state.selectedId != null && tree.findById(root, state.selectedId!) != null
+  String? _keepSelection(WidgetNode? root) =>
+      (root != null &&
+          state.selectedId != null &&
+          tree.findById(root, state.selectedId!) != null)
       ? state.selectedId
       : null;
 }

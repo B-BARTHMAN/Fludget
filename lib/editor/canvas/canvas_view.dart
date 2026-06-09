@@ -1,4 +1,3 @@
-// lib/editor/canvas/canvas_view.dart
 import 'package:fludget/catalog/model/widget_node.dart';
 import 'package:fludget/catalog/node_builder.dart';
 import 'package:fludget/editor/document/document_cubit.dart';
@@ -6,6 +5,7 @@ import 'package:fludget/editor/document/document_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fludget/editor/widget_tree/widget_type_menu.dart';
 
 class CanvasView extends StatefulWidget {
   const CanvasView({super.key});
@@ -42,6 +42,9 @@ class _CanvasViewState extends State<CanvasView> {
           previous.root != current.root ||
           previous.selectedId != current.selectedId,
       builder: (context, state) {
+        final root = state.root;
+        if (root == null) return const _EmptyCanvas();
+
         Widget decorate(WidgetNode node, Widget built) {
           final tagged = MetaData(
             metaData: node.id,
@@ -80,7 +83,7 @@ class _CanvasViewState extends State<CanvasView> {
                     clipBehavior: Clip.antiAlias,
                     child: KeyedSubtree(
                       key: _contentKey,
-                      child: buildNode(state.root, decorate: decorate),
+                      child: buildNode(root, decorate: decorate),
                     ),
                   ),
                 ),
@@ -89,6 +92,68 @@ class _CanvasViewState extends State<CanvasView> {
           ),
         );
       },
+    );
+  }
+}
+
+class _EmptyCanvas extends StatelessWidget {
+  const _EmptyCanvas();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: colors.surfaceContainerHighest,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.add_to_photos_outlined,
+              size: 48,
+              color: colors.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This component is empty',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Pick the first widget to start building.',
+              style: TextStyle(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 20),
+            WidgetTypeMenu(
+              onSelected: (type) => context.read<DocumentCubit>().setRoot(type),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 18, color: colors.onPrimary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Add a widget',
+                      style: TextStyle(
+                        color: colors.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

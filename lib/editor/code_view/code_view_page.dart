@@ -10,7 +10,7 @@ class CodeViewPage extends StatelessWidget {
     super.key,
   });
 
-  final WidgetNode root;
+  final WidgetNode? root;
   final String className;
 
   @override

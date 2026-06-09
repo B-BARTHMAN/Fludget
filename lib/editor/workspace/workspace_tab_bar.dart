@@ -1,4 +1,9 @@
+import 'package:fludget/editor/document/document_cubit.dart';
+import 'package:fludget/editor/document/document_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+typedef TabDescriptor = ({String name, DocumentCubit cubit});
 
 class WorkspaceTabBar extends StatelessWidget {
   const WorkspaceTabBar({
@@ -10,7 +15,7 @@ class WorkspaceTabBar extends StatelessWidget {
     super.key,
   });
 
-  final List<String> tabs;
+  final List<TabDescriptor> tabs;
   final int activeIndex;
   final ValueChanged<int> onSelect;
   final ValueChanged<int> onClose;
@@ -28,6 +33,7 @@ class WorkspaceTabBar extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: tabs.length,
               itemBuilder: (context, index) {
+                final tab = tabs[index];
                 final selected = index == activeIndex;
                 return InkWell(
                   onTap: () => onSelect(index),
@@ -51,7 +57,7 @@ class WorkspaceTabBar extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            tabs[index],
+                            tab.name,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: selected
@@ -60,12 +66,22 @@ class WorkspaceTabBar extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 16),
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => onClose(index),
-                          tooltip: 'Close',
+                        const SizedBox(width: 6),
+                        BlocBuilder<DocumentCubit, DocumentState>(
+                          bloc: tab.cubit,
+                          buildWhen: (p, c) => p.isDirty != c.isDirty,
+                          builder: (context, state) => IconButton(
+                            icon: Icon(
+                              state.isDirty ? Icons.circle : Icons.close,
+                              size: state.isDirty ? 8 : 16,
+                              color: state.isDirty ? colors.primary : null,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => onClose(index),
+                            tooltip: state.isDirty
+                                ? 'Unsaved - close'
+                                : 'Close',
+                          ),
                         ),
                       ],
                     ),

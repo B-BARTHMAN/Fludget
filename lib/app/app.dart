@@ -1,3 +1,4 @@
+import 'package:fludget/app/app_exit_guard.dart';
 import 'package:fludget/app/router.dart';
 import 'package:fludget/app/theme.dart';
 import 'package:fludget/editor/project/project_cubit.dart';
@@ -26,12 +27,14 @@ class FludgetApp extends StatelessWidget {
                 WorkspaceCubit(project: context.read<ProjectCubit>()),
           ),
         ],
-        child: MaterialApp.router(
-          title: 'Fludget',
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          routerConfig: appRouter,
-          debugShowCheckedModeBanner: false,
+        child: AppExitGuard(
+          child: MaterialApp.router(
+            title: 'Fludget',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            routerConfig: appRouter,
+            debugShowCheckedModeBanner: false,
+          ),
         ),
       ),
     );

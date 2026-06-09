@@ -1,5 +1,5 @@
-import 'package:fludget/catalog/registry.dart';
 import 'package:fludget/editor/document/document_cubit.dart';
+import 'package:fludget/editor/widget_tree/widget_type_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,14 +12,10 @@ class AddChildButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final document = context.read<DocumentCubit>();
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.add, size: 16),
+    return WidgetTypeMenu(
       tooltip: 'Add to $slot',
+      icon: const Icon(Icons.add, size: 16),
       onSelected: (type) => document.addChild(parentId, slot, type),
-      itemBuilder: (context) => [
-        for (final type in widgetRegistry.keys)
-          PopupMenuItem(value: type, child: Text(type)),
-      ],
     );
   }
 }

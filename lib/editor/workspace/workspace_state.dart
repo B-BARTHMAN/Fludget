@@ -13,7 +13,7 @@ abstract class WorkspaceState with _$WorkspaceState {
     @Default(<DocumentTab>[]) List<DocumentTab> tabs,
     @Default(0) int activeIndex,
   }) = _WorkspaceState;
-  
+
   const WorkspaceState._();
 
   bool get hasTabs => tabs.isNotEmpty;
@@ -30,4 +30,5 @@ abstract class WorkspaceState with _$WorkspaceState {
   }
 
   DocumentCubit? get activeDocument => activeTab?.cubit;
+  bool get anyDirty => tabs.any((t) => t.cubit.state.isDirty);
 }

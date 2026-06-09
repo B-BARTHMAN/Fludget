@@ -28,9 +28,9 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       emit(state.copyWith(activeIndex: existing));
       return;
     }
-    final root = _project.state.project?.rootOf(id);
-    if (root == null) return;
-    final tab = (componentId: id, cubit: DocumentCubit(root));
+    final project = _project.state.project;
+    if (project == null || project.component(id) == null) return;
+    final tab = (componentId: id, cubit: DocumentCubit(project.rootOf(id)));
     emit(
       state.copyWith(
         tabs: [...state.tabs, tab],
@@ -39,10 +39,23 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     );
   }
 
-  Future<void> saveActive() async {
-    final tab = state.activeTab;
-    if (tab == null) return;
-    await _project.saveComponent(tab.componentId, tab.cubit.state.root);
+  Future<void> saveActive() => saveTabAt(state.activeIndex);
+
+  Future<void> saveTabAt(int index) async {
+    if (index < 0 || index >= state.tabs.length) return;
+    final tab = state.tabs[index];
+    final saved = tab.cubit.state.root;
+    await _project.saveComponent(tab.componentId, saved);
+    tab.cubit.markSaved(saved);
+  }
+
+  Future<void> saveAll() async {
+    for (final tab in state.tabs) {
+      if (!tab.cubit.state.isDirty) continue;
+      final saved = tab.cubit.state.root;
+      await _project.saveComponent(tab.componentId, saved);
+      tab.cubit.markSaved(saved);
+    }
   }
 
   void switchTo(int index) {

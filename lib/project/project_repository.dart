@@ -27,7 +27,10 @@ class ProjectRepository {
     for (final file in raw.files) {
       final json = jsonDecode(file.contents) as Map<String, dynamic>;
       final component = Component.fromJson(json);
-      final clean = component.copyWith(root: normalizeNode(component.root));
+      final root = component.root;
+      final clean = component.copyWith(
+        root: root == null ? null : normalizeNode(root),
+      );
       components[clean.id] = clean;
       folderOf[clean.id] = file.folder;
     }
@@ -45,7 +48,10 @@ class ProjectRepository {
     Component component,
     String folder,
   ) async {
-    final clean = component.copyWith(root: normalizeNode(component.root));
+    final root = component.root;
+    final clean = component.copyWith(
+      root: root == null ? null : normalizeNode(root),
+    );
     await _fileService.writeComponent(
       projectName,
       folder,

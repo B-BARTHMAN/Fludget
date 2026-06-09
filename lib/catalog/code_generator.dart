@@ -11,7 +11,7 @@ String generateExpression(WidgetNode node) {
   return def.toCode(node, children);
 }
 
-String generate(WidgetNode root, {String className = 'MyWidget'}) =>
+String generate(WidgetNode? root, {String className = 'MyWidget'}) =>
     '''
 import 'package:flutter/material.dart';
 
@@ -20,7 +20,7 @@ class $className extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ${generateExpression(root)};
+    return ${root == null ? 'const SizedBox.shrink()' : generateExpression(root)};
   }
 }
 ''';

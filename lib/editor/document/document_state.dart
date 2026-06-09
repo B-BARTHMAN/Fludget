@@ -7,7 +7,8 @@ part 'document_state.freezed.dart';
 @freezed
 abstract class DocumentState with _$DocumentState {
   const factory DocumentState({
-    required WidgetNode root,
+    required WidgetNode? root,
+    required WidgetNode? savedRoot,
     String? selectedId,
     @Default(<WidgetNode>[]) List<WidgetNode> past,
     @Default(<WidgetNode>[]) List<WidgetNode> future,
@@ -17,7 +18,9 @@ abstract class DocumentState with _$DocumentState {
 
   bool get canUndo => past.isNotEmpty;
   bool get canRedo => future.isNotEmpty;
+  bool get isDirty => root != savedRoot;
 
-  WidgetNode? get selectedNode =>
-      selectedId == null ? null : findById(root, selectedId!);
+  WidgetNode? get selectedNode => (root == null || selectedId == null)
+      ? null
+      : findById(root!, selectedId!);
 }

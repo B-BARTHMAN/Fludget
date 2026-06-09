@@ -17,7 +17,7 @@ class WidgetTreePanel extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: WidgetTreeNode(
-            node: state.root,
+            node: state.root!,
             selectedId: state.selectedId,
             depth: 0,
           ),
