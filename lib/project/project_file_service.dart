@@ -119,6 +119,12 @@ class ProjectFileService {
         if (folder.isNotEmpty) ...folder.split('/'),
       ]);
 
+  Future<void> renameProject(String oldName, String newName) async {
+    final from = Directory(await _dirPath(oldName, ''));
+    if (!from.existsSync()) return;
+    await from.rename(await _dirPath(newName, ''));
+  }
+
   /// A relative path in `/`-separated form, so folder keys match in memory
   /// regardless of the host platform's separator.
   String _normalize(String relative) => p.split(relative).join('/');

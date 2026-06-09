@@ -124,3 +124,33 @@ Future<bool> confirmDelete(
   );
   return result ?? false;
 }
+
+Future<String?> pickProject(
+  BuildContext context, {
+  required List<String> projects,
+  required String current,
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: const Text('Open project'),
+      children: [
+        for (final name in projects)
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(name),
+            child: Row(
+              children: [
+                Icon(
+                  name == current ? Icons.folder_open : Icons.folder_outlined,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(name)),
+                if (name == current) const Icon(Icons.check, size: 18),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+}

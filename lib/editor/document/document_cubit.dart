@@ -61,7 +61,7 @@ class DocumentCubit extends Cubit<DocumentState> {
       state.copyWith(
         root: previous,
         past: state.past.sublist(0, state.past.length - 1),
-        future: [state.root!, ...state.future],
+        future: [state.root, ...state.future],
         selectedId: _keepSelection(previous),
       ),
     );
@@ -73,7 +73,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     emit(
       state.copyWith(
         root: next,
-        past: [...state.past, state.root!],
+        past: [...state.past, state.root],
         future: state.future.sublist(1),
         selectedId: _keepSelection(next),
       ),
@@ -86,7 +86,7 @@ class DocumentCubit extends Cubit<DocumentState> {
   void _commit(WidgetNode? newRoot) => emit(
     state.copyWith(
       root: newRoot,
-      past: [...state.past, state.root!],
+      past: [...state.past, state.root],
       future: const [],
     ),
   );

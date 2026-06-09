@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DocumentState {
 
- WidgetNode? get root; WidgetNode? get savedRoot; String? get selectedId; List<WidgetNode> get past; List<WidgetNode> get future;
+ WidgetNode? get root; WidgetNode? get savedRoot; String? get selectedId; List<WidgetNode?> get past; List<WidgetNode?> get future;
 /// Create a copy of DocumentState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,7 +45,7 @@ abstract mixin class $DocumentStateCopyWith<$Res>  {
   factory $DocumentStateCopyWith(DocumentState value, $Res Function(DocumentState) _then) = _$DocumentStateCopyWithImpl;
 @useResult
 $Res call({
- WidgetNode? root, WidgetNode? savedRoot, String? selectedId, List<WidgetNode> past, List<WidgetNode> future
+ WidgetNode? root, WidgetNode? savedRoot, String? selectedId, List<WidgetNode?> past, List<WidgetNode?> future
 });
 
 
@@ -68,8 +68,8 @@ root: freezed == root ? _self.root : root // ignore: cast_nullable_to_non_nullab
 as WidgetNode?,savedRoot: freezed == savedRoot ? _self.savedRoot : savedRoot // ignore: cast_nullable_to_non_nullable
 as WidgetNode?,selectedId: freezed == selectedId ? _self.selectedId : selectedId // ignore: cast_nullable_to_non_nullable
 as String?,past: null == past ? _self.past : past // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,future: null == future ? _self.future : future // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,
+as List<WidgetNode?>,future: null == future ? _self.future : future // ignore: cast_nullable_to_non_nullable
+as List<WidgetNode?>,
   ));
 }
 /// Create a copy of DocumentState
@@ -178,7 +178,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode> past,  List<WidgetNode> future)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode?> past,  List<WidgetNode?> future)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DocumentState() when $default != null:
 return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.future);case _:
@@ -199,7 +199,7 @@ return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.fut
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode> past,  List<WidgetNode> future)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode?> past,  List<WidgetNode?> future)  $default,) {final _that = this;
 switch (_that) {
 case _DocumentState():
 return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.future);case _:
@@ -219,7 +219,7 @@ return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.fut
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode> past,  List<WidgetNode> future)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( WidgetNode? root,  WidgetNode? savedRoot,  String? selectedId,  List<WidgetNode?> past,  List<WidgetNode?> future)?  $default,) {final _that = this;
 switch (_that) {
 case _DocumentState() when $default != null:
 return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.future);case _:
@@ -234,21 +234,21 @@ return $default(_that.root,_that.savedRoot,_that.selectedId,_that.past,_that.fut
 
 
 class _DocumentState extends DocumentState {
-  const _DocumentState({required this.root, required this.savedRoot, this.selectedId, final  List<WidgetNode> past = const <WidgetNode>[], final  List<WidgetNode> future = const <WidgetNode>[]}): _past = past,_future = future,super._();
+  const _DocumentState({required this.root, required this.savedRoot, this.selectedId, final  List<WidgetNode?> past = const <WidgetNode?>[], final  List<WidgetNode?> future = const <WidgetNode?>[]}): _past = past,_future = future,super._();
   
 
 @override final  WidgetNode? root;
 @override final  WidgetNode? savedRoot;
 @override final  String? selectedId;
- final  List<WidgetNode> _past;
-@override@JsonKey() List<WidgetNode> get past {
+ final  List<WidgetNode?> _past;
+@override@JsonKey() List<WidgetNode?> get past {
   if (_past is EqualUnmodifiableListView) return _past;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_past);
 }
 
- final  List<WidgetNode> _future;
-@override@JsonKey() List<WidgetNode> get future {
+ final  List<WidgetNode?> _future;
+@override@JsonKey() List<WidgetNode?> get future {
   if (_future is EqualUnmodifiableListView) return _future;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_future);
@@ -285,7 +285,7 @@ abstract mixin class _$DocumentStateCopyWith<$Res> implements $DocumentStateCopy
   factory _$DocumentStateCopyWith(_DocumentState value, $Res Function(_DocumentState) _then) = __$DocumentStateCopyWithImpl;
 @override @useResult
 $Res call({
- WidgetNode? root, WidgetNode? savedRoot, String? selectedId, List<WidgetNode> past, List<WidgetNode> future
+ WidgetNode? root, WidgetNode? savedRoot, String? selectedId, List<WidgetNode?> past, List<WidgetNode?> future
 });
 
 
@@ -308,8 +308,8 @@ root: freezed == root ? _self.root : root // ignore: cast_nullable_to_non_nullab
 as WidgetNode?,savedRoot: freezed == savedRoot ? _self.savedRoot : savedRoot // ignore: cast_nullable_to_non_nullable
 as WidgetNode?,selectedId: freezed == selectedId ? _self.selectedId : selectedId // ignore: cast_nullable_to_non_nullable
 as String?,past: null == past ? _self._past : past // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,future: null == future ? _self._future : future // ignore: cast_nullable_to_non_nullable
-as List<WidgetNode>,
+as List<WidgetNode?>,future: null == future ? _self._future : future // ignore: cast_nullable_to_non_nullable
+as List<WidgetNode?>,
   ));
 }
 

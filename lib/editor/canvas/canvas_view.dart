@@ -2,10 +2,10 @@ import 'package:fludget/catalog/model/widget_node.dart';
 import 'package:fludget/catalog/node_builder.dart';
 import 'package:fludget/editor/document/document_cubit.dart';
 import 'package:fludget/editor/document/document_state.dart';
+import 'package:fludget/editor/widget_tree/widget_type_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fludget/editor/widget_tree/widget_type_menu.dart';
 
 class CanvasView extends StatefulWidget {
   const CanvasView({super.key});

@@ -27,6 +27,31 @@ class ProjectCubit extends Cubit<ProjectState> {
     emit(ProjectState(project: loaded));
   }
 
+  Future<List<String>> availableProjects() => _repository.listProjects();
+
+  Future<void> openProject(String name) async {
+    if (name == state.project?.name) return;
+    emit(ProjectState(project: await _repository.loadProject(name)));
+  }
+
+  Future<void> createNewProject(String name) async {
+    final existing = (await _repository.listProjects()).toSet();
+    final unique = _disambiguate(name, existing);
+    await _repository.createProject(unique);
+    emit(ProjectState(project: await _repository.loadProject(unique)));
+  }
+
+  Future<void> renameProject(String newName) async {
+    final loaded = state.project;
+    if (loaded == null || newName == loaded.name) return;
+    final others = (await _repository.listProjects()).toSet()
+      ..remove(loaded.name);
+    final unique = _disambiguate(newName, others);
+    if (unique == loaded.name) return;
+    await _repository.renameProject(loaded.name, unique);
+    emit(ProjectState(project: await _repository.loadProject(unique)));
+  }
+
   /// Persists component [id] with [root] and updates the in-memory copy.
   Future<void> saveComponent(String id, WidgetNode? root) async {
     final loaded = state.project;
@@ -91,13 +116,17 @@ class ProjectCubit extends Cubit<ProjectState> {
       current.name,
       excludeId: id,
     );
+    // Write the file in its new home, then remove the original.
     await _repository.saveComponent(
       loaded.name,
       current.copyWith(name: unique),
       toFolder,
     );
-    if (unique.toLowerCase() != current.name.toLowerCase()) {
-      await _repository.deleteComponent(loaded.name, toFolder, current.name);
+    // Delete the old file unless it's the very file we just wrote.
+    final fromPath = '$fromFolder/${current.name}'.toLowerCase();
+    final toPath = '$toFolder/$unique'.toLowerCase();
+    if (fromPath != toPath) {
+      await _repository.deleteComponent(loaded.name, fromFolder, current.name);
     }
     await _reload();
   }

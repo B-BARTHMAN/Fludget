@@ -43,6 +43,9 @@ class ProjectRepository {
     );
   }
 
+  Future<void> renameProject(String oldName, String newName) =>
+      _fileService.renameProject(oldName, newName);
+
   Future<void> saveComponent(
     String projectName,
     Component component,

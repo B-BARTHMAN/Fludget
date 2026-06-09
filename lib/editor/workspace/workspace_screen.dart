@@ -125,10 +125,15 @@ class _Workspace extends StatelessWidget {
     final tabBar = WorkspaceTabBar(
       tabs: [
         for (final t in state.tabs)
-          (name: _nameOf(t.componentId), cubit: t.cubit),
+          (
+            componentId: t.componentId,
+            name: _nameOf(t.componentId),
+            cubit: t.cubit,
+          ),
       ],
       activeIndex: state.activeIndex,
       onSelect: workspace.switchTo,
+      onReorder: workspace.reorderTab,
       onClose: (index) => _confirmClose(
         context,
         workspace,
@@ -208,12 +213,9 @@ class _Workspace extends StatelessWidget {
               ),
             ),
       body: wide
-          ? Row(
-              children: [
-                const SizedBox(width: 300, child: LeftPanel()),
-                const VerticalDivider(width: 1),
-                Expanded(child: withDoc(canvasColumn)),
-              ],
+          ? _ResizableLeft(
+              panel: const LeftPanel(),
+              body: withDoc(canvasColumn),
             )
           : withDoc(canvasColumn),
     );
@@ -261,5 +263,50 @@ Future<void> _confirmClose(
     case _CloseAction.cancel:
     case null:
       break;
+  }
+}
+
+class _ResizableLeft extends StatefulWidget {
+  const _ResizableLeft({required this.panel, required this.body});
+
+  final Widget panel;
+  final Widget body;
+
+  @override
+  State<_ResizableLeft> createState() => _ResizableLeftState();
+}
+
+class _ResizableLeftState extends State<_ResizableLeft> {
+  static const _min = 220.0;
+  double _width = 300;
+  double _max = 480;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _max = (constraints.maxWidth - 280).clamp(_min, 560).toDouble();
+        final width = _width.clamp(_min, _max);
+        return Row(
+          children: [
+            SizedBox(width: width, child: widget.panel),
+            MouseRegion(
+              cursor: SystemMouseCursors.resizeLeftRight,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: (d) => setState(
+                  () => _width = (_width + d.delta.dx).clamp(_min, _max),
+                ),
+                child: const SizedBox(
+                  width: 8,
+                  child: Center(child: VerticalDivider(width: 1)),
+                ),
+              ),
+            ),
+            Expanded(child: widget.body),
+          ],
+        );
+      },
+    );
   }
 }

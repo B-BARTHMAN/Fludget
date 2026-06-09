@@ -21,6 +21,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
   final ProjectCubit _project;
   late final StreamSubscription<ProjectState> _projectSub;
   bool _opened = false;
+  String? _lastProjectName;
 
   void openComponent(String id) {
     final existing = state.tabs.indexWhere((t) => t.componentId == id);
@@ -63,6 +64,21 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     emit(state.copyWith(activeIndex: index));
   }
 
+  void reorderTab(int oldIndex, int newIndex) {
+    final n = state.tabs.length;
+    if (oldIndex < 0 || oldIndex >= n) return;
+    var target = newIndex > oldIndex ? newIndex - 1 : newIndex;
+    target = target.clamp(0, n - 1);
+    if (target == oldIndex) return;
+
+    final activeId = state.tabs[state.activeIndex.clamp(0, n - 1)].componentId;
+    final tabs = [...state.tabs];
+    tabs.insert(target, tabs.removeAt(oldIndex));
+
+    final active = tabs.indexWhere((t) => t.componentId == activeId);
+    emit(state.copyWith(tabs: tabs, activeIndex: active < 0 ? 0 : active));
+  }
+
   Future<void> closeTab(int index) async {
     if (index < 0 || index >= state.tabs.length) return;
     final closing = state.tabs[index];
@@ -80,7 +96,17 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
   void _onProject(ProjectState projectState) {
     final loaded = projectState.project;
     if (loaded == null) return;
+    final projectChanged = loaded.name != _lastProjectName;
+    _lastProjectName = loaded.name;
+
     _pruneClosedComponents(loaded);
+
+    if (projectChanged) {
+      // Rename keeps component ids, so tabs survive the prune; a real switch
+      // clears them. Empty after a change => allow the new project's first
+      // component to auto-open.
+      _opened = state.tabs.isNotEmpty;
+    }
     if (!_opened) {
       final first = loaded.firstComponentId;
       if (first != null) {

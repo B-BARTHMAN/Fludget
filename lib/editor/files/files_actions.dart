@@ -3,6 +3,7 @@ import 'package:fludget/editor/files/files_dialogs.dart';
 import 'package:fludget/editor/project/project_cubit.dart';
 import 'package:fludget/editor/workspace/workspace_cubit.dart';
 import 'package:fludget/project/component.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -102,6 +103,92 @@ Future<void> deleteFolder(BuildContext context, ExplorerFolder folder) async {
   final confirmed = await confirmDelete(context, label: folder.name);
   if (!confirmed) return;
   await project.deleteFolder(folder.path);
+}
+
+enum _SwitchAction { save, discard, cancel }
+
+/// True if it's safe to switch away from the current project.
+Future<bool> _ensureSaved(
+  BuildContext context,
+  WorkspaceCubit workspace,
+) async {
+  if (!workspace.state.anyDirty) return true;
+  final action = await showDialog<_SwitchAction>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Unsaved changes'),
+      content: const Text('Save your changes before switching projects?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, _SwitchAction.cancel),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _SwitchAction.discard),
+          child: const Text('Discard'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _SwitchAction.save),
+          child: const Text('Save all'),
+        ),
+      ],
+    ),
+  );
+  switch (action) {
+    case _SwitchAction.save:
+      await workspace.saveAll();
+      return true;
+    case _SwitchAction.discard:
+      return true;
+    case _SwitchAction.cancel:
+    case null:
+      return false;
+  }
+}
+
+Future<void> openProject(BuildContext context) async {
+  final project = context.read<ProjectCubit>();
+  final workspace = context.read<WorkspaceCubit>();
+  final loaded = project.state.project;
+  if (loaded == null) return;
+  final names = await project.availableProjects();
+  if (!context.mounted) return;
+  final choice = await pickProject(
+    context,
+    projects: names..sort(),
+    current: loaded.name,
+  );
+  if (choice == null || choice == loaded.name) return;
+  if (!context.mounted) return;
+  if (!await _ensureSaved(context, workspace)) return;
+  await project.openProject(choice);
+}
+
+Future<void> newProject(BuildContext context) async {
+  final project = context.read<ProjectCubit>();
+  final workspace = context.read<WorkspaceCubit>();
+  final name = await promptName(
+    context,
+    title: 'New project',
+    initial: 'Untitled Project',
+  );
+  if (name == null) return;
+  if (!context.mounted) return;
+  if (!await _ensureSaved(context, workspace)) return;
+  await project.createNewProject(name);
+}
+
+Future<void> renameProject(BuildContext context) async {
+  final project = context.read<ProjectCubit>();
+  final loaded = project.state.project;
+  if (loaded == null) return;
+  final name = await promptName(
+    context,
+    title: 'Rename project',
+    initial: loaded.name,
+  );
+  if (name == null) return;
+  await project.renameProject(name);
 }
 
 String _parentOf(String path) {

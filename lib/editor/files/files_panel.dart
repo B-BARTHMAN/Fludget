@@ -26,13 +26,7 @@ class FilesPanel extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      project.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
+                  Expanded(child: _ProjectMenu(name: project.name)),
                   IconButton(
                     icon: const Icon(Icons.note_add_outlined),
                     tooltip: 'New component',
@@ -63,6 +57,47 @@ class FilesPanel extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _ProjectMenu extends StatelessWidget {
+  const _ProjectMenu({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Project actions',
+      position: PopupMenuPosition.under,
+      onSelected: (value) {
+        switch (value) {
+          case 'open':
+            unawaited(actions.openProject(context));
+          case 'new':
+            unawaited(actions.newProject(context));
+          case 'rename':
+            unawaited(actions.renameProject(context));
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: 'open', child: Text('Open project…')),
+        PopupMenuItem(value: 'new', child: Text('New project')),
+        PopupMenuItem(value: 'rename', child: Text('Rename project…')),
+      ],
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              name,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          const Icon(Icons.arrow_drop_down, size: 20),
+        ],
+      ),
     );
   }
 }

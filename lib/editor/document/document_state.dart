@@ -10,8 +10,8 @@ abstract class DocumentState with _$DocumentState {
     required WidgetNode? root,
     required WidgetNode? savedRoot,
     String? selectedId,
-    @Default(<WidgetNode>[]) List<WidgetNode> past,
-    @Default(<WidgetNode>[]) List<WidgetNode> future,
+    @Default(<WidgetNode?>[]) List<WidgetNode?> past,
+    @Default(<WidgetNode?>[]) List<WidgetNode?> future,
   }) = _DocumentState;
 
   const DocumentState._();
