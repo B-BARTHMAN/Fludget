@@ -1,22 +1,21 @@
-import 'package:fludget/catalog/properties/codecs/double_codec.dart';
-import 'package:fludget/catalog/properties/prop.dart';
-import 'package:fludget/catalog/slots.dart';
+import 'package:fludget/catalog/properties/props.dart';
+import 'package:fludget/catalog/slots/slot_children.dart';
+import 'package:fludget/catalog/slots/slots.dart';
 import 'package:fludget/catalog/widget_def.dart';
-import 'package:flutter/material.dart';
+import 'package:fludget/catalog/widgets/categories.dart';
+import 'package:flutter/widgets.dart';
 
-const Prop<double?> _width = Prop('width', DoubleCodec());
-const Prop<double?> _height = Prop('height', DoubleCodec());
-
+/// The template for every widget you add: compose shared `Props` and `Slots`,
+/// name a category, and write only `build`. Code generation is produced
+/// automatically from the props and slots below.
 final sizedBoxDef = WidgetDef(
   type: 'SizedBox',
-  props: [_width, _height],
-  slots: const {'child': SlotArity.single},
+  category: Categories.layout,
+  props: [Props.width, Props.height],
+  slots: [Slots.child],
   build: (node, children) => SizedBox(
-    width: _width.read(node),
-    height: _height.read(node),
-    child: children.one('child'),
+    width: Props.width.read(node),
+    height: Props.height.read(node),
+    child: children.one(Slots.child),
   ),
-  toCode: (node, children) =>
-      'SizedBox(width: ${_width.code(node)}, '
-      'height: ${_height.code(node)}, child: ${children.one('child') ?? 'null'})',
 );
