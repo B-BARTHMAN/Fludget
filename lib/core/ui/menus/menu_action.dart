@@ -66,6 +66,7 @@ class ActionMenu extends StatelessWidget {
             ),
           ),
       ],
+      child: child,
     );
   }
 }

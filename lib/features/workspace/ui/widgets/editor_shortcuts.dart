@@ -1,10 +1,12 @@
+// features/workspace/ui/widgets/editor_shortcuts.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Wraps [child] with the editor's keyboard shortcuts (undo / redo / save),
-/// each bound for both Ctrl (Windows/Linux) and Cmd (macOS) without writing the
-/// pair out by hand.
-class EditorShortcuts extends StatelessWidget {
+/// Registers the editor's shortcuts (undo / redo / save) on the hardware
+/// keyboard, so they fire regardless of where focus sits — a focus-scoped
+/// handler missed them whenever a tap moved focus onto an enclosing scope.
+/// Ctrl (Windows/Linux) or Cmd (macOS).
+class EditorShortcuts extends StatefulWidget {
   const EditorShortcuts({
     required this.child,
     required this.onUndo,
@@ -19,25 +21,40 @@ class EditorShortcuts extends StatelessWidget {
   final VoidCallback onSave;
 
   @override
-  Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: {
-        ..._bind(LogicalKeyboardKey.keyZ, onUndo),
-        ..._bind(LogicalKeyboardKey.keyZ, onRedo, shift: true),
-        ..._bind(LogicalKeyboardKey.keyY, onRedo),
-        ..._bind(LogicalKeyboardKey.keyS, onSave),
-      },
-      child: Focus(autofocus: true, child: child),
-    );
+  State<EditorShortcuts> createState() => _EditorShortcutsState();
+}
+
+class _EditorShortcutsState extends State<EditorShortcuts> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
   }
 
-  /// Both the Ctrl and Cmd variants of [key] (+ optional [shift]) -> [action].
-  Map<ShortcutActivator, VoidCallback> _bind(
-    LogicalKeyboardKey key,
-    VoidCallback action, {
-    bool shift = false,
-  }) => {
-    SingleActivator(key, control: true, shift: shift): action,
-    SingleActivator(key, meta: true, shift: shift): action,
-  };
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  bool _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    final keys = HardwareKeyboard.instance;
+    if (!keys.isControlPressed && !keys.isMetaPressed) return false;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.keyZ:
+        keys.isShiftPressed ? widget.onRedo() : widget.onUndo();
+        return true;
+      case LogicalKeyboardKey.keyY:
+        widget.onRedo();
+        return true;
+      case LogicalKeyboardKey.keyS:
+        widget.onSave();
+        return true;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

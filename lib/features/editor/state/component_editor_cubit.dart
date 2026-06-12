@@ -49,10 +49,11 @@ class ComponentEditorCubit extends Cubit<ComponentEditorState> {
 
   void delete(String id) {
     final root = state.root;
-    if (root == null || id == root.id) return; // never delete the root
+    if (root == null) return;
+    final newRoot = id == root.id ? null : tree.removeById(root, id);
     emit(
       state.copyWith(
-        root: tree.removeById(root, id),
+        root: newRoot,
         past: [...state.past, root],
         future: const [],
         selectedId: state.selectedId == id ? null : state.selectedId,

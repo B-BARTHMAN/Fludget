@@ -4,6 +4,7 @@ import 'package:fludget/features/editor/state/component_editor_state.dart';
 import 'package:fludget/features/project/state/project_cubit.dart';
 import 'package:fludget/features/workspace/state/workspace_cubit.dart';
 import 'package:fludget/features/workspace/state/workspace_state.dart';
+import 'package:fludget/features/workspace/ui/tab_actions.dart' as tab_actions;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -88,7 +89,7 @@ class _Tab extends StatelessWidget {
             Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
             const SizedBox(width: Insets.sm),
             InkWell(
-              onTap: () => workspace.closeTab(index),
+              onTap: () => tab_actions.closeTab(context, index),
               child: Icon(
                 Icons.close,
                 size: 14,

@@ -69,6 +69,8 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     if (tab != null) await _save(tab);
   }
 
+  Future<void> saveTab(int index) => _save(state.tabs[index]);
+
   Future<void> saveAll() async {
     for (final tab in state.tabs) {
       await _save(tab);

@@ -5,6 +5,7 @@ import 'package:fludget/catalog/registry.dart';
 import 'package:fludget/features/project/logic/project_file_service.dart';
 import 'package:fludget/features/project/logic/project_repository.dart';
 import 'package:fludget/features/project/state/project_cubit.dart';
+import 'package:fludget/features/settings/state/settings_cubit.dart';
 import 'package:fludget/features/workspace/state/workspace_cubit.dart';
 import 'package:fludget/features/workspace/ui/screens/workspace_screen.dart';
 import 'package:flutter/material.dart';
@@ -28,9 +29,8 @@ class FludgetApp extends StatelessWidget {
       value: source,
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(create: (_) => SettingsCubit()),
           BlocProvider(create: (_) => ProjectCubit(repository)..bootstrap()),
-          // Eager: the workspace must subscribe to the project before
-          // bootstrap's first (post-await) emit lands.
           BlocProvider(
             lazy: false,
             create: (context) =>

@@ -31,7 +31,7 @@ class WidgetTreeNode extends StatelessWidget {
           builder: (context, state) {
             final selected = state.selectedId == node.id;
             return InkWell(
-              onTap: () => editor.select(node.id),
+              onTap: () => editor.select(selected ? null : node.id),
               child: Container(
                 height: Sizes.treeRow,
                 padding: EdgeInsets.only(
@@ -50,7 +50,7 @@ class WidgetTreeNode extends StatelessWidget {
                     Expanded(
                       child: Text(node.type, overflow: TextOverflow.ellipsis),
                     ),
-                    if (selected && depth > 0)
+                    if (selected)
                       InkWell(
                         onTap: () => editor.delete(node.id),
                         child: Icon(

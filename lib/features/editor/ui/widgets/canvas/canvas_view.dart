@@ -6,6 +6,7 @@ import 'package:fludget/features/editor/state/component_editor_state.dart';
 import 'package:fludget/features/editor/ui/widgets/canvas/empty_canvas.dart';
 import 'package:fludget/features/editor/ui/widgets/canvas/node_decoration.dart';
 import 'package:fludget/features/editor/ui/widgets/canvas/node_hit_test.dart';
+import 'package:fludget/features/settings/state/settings_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,14 +25,14 @@ class _CanvasViewState extends State<CanvasView> {
   void _handleTap(PointerDownEvent event) {
     final box = _contentKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return;
-    final id = nodeIdAt(box, event.position);
-    if (id != null) context.read<ComponentEditorCubit>().select(id);
+    context.read<ComponentEditorCubit>().select(nodeIdAt(box, event.position));
   }
 
   @override
   Widget build(BuildContext context) {
     final source = context.read<WidgetSource>();
     final colors = Theme.of(context).colorScheme;
+    final device = context.watch<SettingsCubit>().state;
 
     return BlocBuilder<ComponentEditorCubit, ComponentEditorState>(
       buildWhen: (p, c) => p.root != c.root || p.selectedId != c.selectedId,
@@ -45,16 +46,17 @@ class _CanvasViewState extends State<CanvasView> {
         );
         return ColoredBox(
           color: colors.surfaceContainerHighest,
-          child: Padding(
-            padding: const EdgeInsets.all(Insets.xl),
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Listener(
-                  onPointerDown: _handleTap,
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: _handleTap,
+            child: Padding(
+              padding: const EdgeInsets.all(Insets.xl),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Container(
-                    width: DeviceFrame.width,
-                    height: DeviceFrame.height,
+                    width: device.deviceWidth,
+                    height: device.deviceHeight,
                     decoration: BoxDecoration(
                       color: colors.surface,
                       borderRadius: BorderRadius.circular(DeviceFrame.radius),
