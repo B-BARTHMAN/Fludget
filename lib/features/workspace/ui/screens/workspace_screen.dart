@@ -1,5 +1,6 @@
-// features/workspace/ui/screens/workspace_screen.dart
 import 'package:fludget/catalog/engine/widget_source.dart';
+import 'package:fludget/features/composition/logic/component_codegen.dart';
+import 'package:fludget/features/composition/logic/component_library.dart';
 import 'package:fludget/features/editor/state/component_editor_cubit.dart';
 import 'package:fludget/features/editor/ui/screens/code_view_page.dart';
 import 'package:fludget/features/editor/ui/widgets/properties/properties_panel.dart';
@@ -24,9 +25,7 @@ const _wide = 800.0;
 /// that need it (tree, canvas, properties), then arranges those three regions
 /// responsively — inline panels when wide, drawers when narrow.
 class WorkspaceScreen extends StatefulWidget {
-  const WorkspaceScreen({required this.source, super.key});
-
-  final WidgetSource source;
+  const WorkspaceScreen({super.key});
 
   @override
   State<WorkspaceScreen> createState() => _WorkspaceScreenState();
@@ -122,23 +121,25 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Future<void> _viewCode(BuildContext context) async {
     final tab = context.read<WorkspaceCubit>().state.active;
     final project = context.read<ProjectCubit>().state.project;
-    final root = tab?.editor.state.root;
-    if (tab == null || project == null || root == null) return;
-    final name = project.components[tab.componentId]?.name ?? 'Component';
+    final source = context.read<WidgetSource>();
+    if (tab == null || project == null) return;
+    final saved = project.components[tab.componentId];
+    if (saved == null) return;
+    final target = saved.copyWith(root: tab.editor.state.root);
+    if (target.root == null) return;
+    final code = generateProgram(target, source, ComponentLibrary(project));
+    if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CodeViewPage(
-          root: root,
-          className: _pascalCase(name),
-          source: widget.source,
-        ),
+        builder: (_) =>
+            CodeViewPage(code: code, title: pascalCase(target.name)),
       ),
     );
   }
 }
 
 /// `My button` -> `MyButton`, a valid class identifier.
-String _pascalCase(String name) {
+String pascalCase(String name) {
   final words = name.split(RegExp('[^A-Za-z0-9]+')).where((w) => w.isNotEmpty);
   return words.map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join();
 }

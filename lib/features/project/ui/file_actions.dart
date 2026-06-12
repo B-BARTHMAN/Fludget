@@ -2,6 +2,7 @@ import 'package:fludget/core/ui/dialogs/confirm_dialog.dart';
 import 'package:fludget/core/ui/dialogs/name_dialog.dart';
 import 'package:fludget/core/ui/dialogs/option_picker_dialog.dart';
 import 'package:fludget/core/util/path.dart';
+import 'package:fludget/features/composition/logic/component_library.dart';
 import 'package:fludget/features/project/logic/component.dart';
 import 'package:fludget/features/project/logic/explorer_tree.dart';
 import 'package:fludget/features/project/state/project_cubit.dart';
@@ -37,10 +38,18 @@ Future<void> renameComponent(BuildContext context, Component component) async {
 }
 
 Future<void> deleteComponent(BuildContext context, Component component) async {
+  final project = context.read<ProjectCubit>().state.project;
+  final usedBy = project == null
+      ? const <String>[]
+      : ComponentLibrary(project).dependentsOf(component.id);
+  final message = usedBy.isEmpty
+      ? 'This cannot be undone.'
+      : 'Used by ${usedBy.length} other component(s): ${usedBy.join(', ')}. '
+            'They will show a missing-widget placeholder. This cannot be undone.';
   final ok = await confirm(
     context,
     title: 'Delete "${component.name}"?',
-    message: 'This cannot be undone.',
+    message: message,
     confirmLabel: 'Delete',
     destructive: true,
   );

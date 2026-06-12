@@ -1,29 +1,18 @@
-import 'package:fludget/catalog/engine/code_generator.dart';
-import 'package:fludget/catalog/engine/widget_source.dart';
-import 'package:fludget/catalog/model/widget_node.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Shows the generated Dart for a component's [root], with a copy button.
-/// [className] must already be a valid Dart identifier — the caller sanitizes.
+/// Shows generated Dart [code] with a copy button.
 class CodeViewPage extends StatelessWidget {
-  const CodeViewPage({
-    required this.root,
-    required this.className,
-    required this.source,
-    super.key,
-  });
+  const CodeViewPage({required this.code, required this.title, super.key});
 
-  final WidgetNode root;
-  final String className;
-  final WidgetSource source;
+  final String code;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final code = generate(root, source, className: className);
     return Scaffold(
       appBar: AppBar(
-        title: Text(className),
+        title: Text(title),
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),

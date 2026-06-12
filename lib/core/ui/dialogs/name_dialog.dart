@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Prompts for a name. Returns the trimmed value, or null if cancelled or empty.
+/// Prompts for a name. Returns the trimmed value, or null if cancelled or empty
 Future<String?> promptName(
   BuildContext context, {
   required String title,

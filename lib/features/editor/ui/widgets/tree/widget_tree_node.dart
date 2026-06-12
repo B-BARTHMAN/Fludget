@@ -20,7 +20,9 @@ class WidgetTreeNode extends StatelessWidget {
     final source = context.read<WidgetSource>();
     final editor = context.read<ComponentEditorCubit>();
     final colors = Theme.of(context).colorScheme;
-    final slots = source.defFor(node.type)?.slots ?? const [];
+    final def = source.defFor(node.type);
+    final slots = def?.slots ?? const [];
+    final name = def?.label ?? node.type;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +50,7 @@ class WidgetTreeNode extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(node.type, overflow: TextOverflow.ellipsis),
+                      child: Text(name, overflow: TextOverflow.ellipsis),
                     ),
                     if (selected)
                       InkWell(

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// Where a widget sits in the categorized add-widget menu — a path of segments
-/// so subcategories come for free: `Category(['Layout'])`, or
-/// `Category(['Material', 'Buttons'])`. The picker tree is built by grouping
-/// widgets on this path.
+/// so subcategories come for free. The optional [icon] is presentation only and
+/// is excluded from equality; path is identity.
 @immutable
 class Category {
-  const Category(this.path);
+  const Category(this.path, {this.icon});
 
   final List<String> path;
+  final IconData? icon;
 
   @override
   bool operator ==(Object other) {
